@@ -25,13 +25,12 @@ engine: julia
 ---
 
 {{< include qr-code.qmd >}}
-
-# Introduction to OrdinaryDiffEq
-# Writing fast Julia code
-# Autodiff
-# PDEs
-# GPUs
-# Callbacks
+{{< include Introduction.qmd >}}
+{{< include FastCode.qmd >}}
+{{< include Autodiff.qmd >}}
+{{< include PDEs.qmd >}}
+{{< include GPUs.qmd >}}
+{{< include Callbacks.qmd >}}
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->

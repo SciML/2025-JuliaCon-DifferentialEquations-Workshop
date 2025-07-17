@@ -1,0 +1,5 @@
+# Writing fast Julia code
+
+<!-- Local Variables: -->
+<!-- mode: markdown -->
+<!-- End: -->
