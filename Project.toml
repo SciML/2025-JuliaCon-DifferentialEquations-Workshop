@@ -1,7 +1,9 @@
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+SparseConnectivityTracer = "9f842d2f-2579-4b1d-911e-f412cf18a3f5"
 quarto_jll = "b7163347-bfae-5fd9-aba4-19f139889d78"
 
 [compat]
