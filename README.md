@@ -1,6 +1,5 @@
-# JuliaCon 2025 presentation about FixedSizeArrays
+# JuliaCon 2025 OrdinaryDiffEq deepdive
 
-Presentation for [talk](https://pretalx.com/juliacon-2025/talk/J3J7U8/) about [FixedSizeArrays.jl](https://github.com/JuliaArrays/FixedSizeArrays.jl) at JuliaCon 2025.
 
 ## Rendering
 
