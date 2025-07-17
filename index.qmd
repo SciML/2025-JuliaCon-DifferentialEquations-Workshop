@@ -1,12 +1,11 @@
 ---
-title: "`FixedSizeArrays.jl`"
-subtitle: "What `Array` probably should have been"
+title: "How to use `OrdinaryDiffEq`"
+subtitle: "Simulations go brrr"
 author:
-  - name: "Mosè Giordano"
-    affiliation: "UCL"
   - name: "Oscar Smith"
     affiliation: "JuliaHub"
-  - name: "Neven Sajko"
+  - name: "Chris Rackakus"
+    affiliation: "JuliaHub"
 format:
   revealjs:
     code-copy: true
@@ -21,167 +20,18 @@ format:
     slide-number: true
     theme: [moon, custom.scss]
     transition: fade
-date: 2025-07-25
+date: 2025-07-22
 engine: julia
-julia:
-    exeflags: ["+nightly"]
 ---
 
 {{< include qr-code.qmd >}}
 
-# Introduction
-
-## Motivation
-
-* Memory is great, but 1D
-* Mathy Arrays don't change size
-* Mutability is hard to reason about
-* Extra allocations
-
-## Implementation
-
-```{.julia code-line-numbers="|1|2|3"}
-struct FixedSizeArray{T,N,Mem<:DenseVector{T}} <: DenseArray{T,N}
-    mem::Mem
-    size::NTuple{N,Int}
-end
-
-function new_fixed_size_array(mem::DenseVector{T}, size::NTuple{N,Int}) where {T,N}
-    new{T,N,typeof(mem)}(mem, size)
-end
-```
-
-## ...
-
-...
-
-
-## Comparison with other array types
-
-|                  | Size set at... | Data backend | Growable | Mutable elements |
-|------------------|----------------|--------------|----------|------------------|
-| `Base.Array`     | runtime        | `Memory`     | ✅       | ✅               |
-| `FixedSizeArray` | runtime        | `Memory`     | ❌       | ✅               |
-| `MArray`         | compile time   | `Tuple`      | ❌       | ✅               |
-| `SArray`         | compile time   | `Tuple`      | ❌       | ❌               |
-
-# Show off
-
-## Fewer allocations
-
-```{julia}
-#| echo: true
-
-using FixedSizeArrays, BenchmarkTools
-
-for n in (0, 2^0, 2^5, 2^10)
-    @info "n = $(n)"
-    @btime fill!(Vector{Float64}(undef, $(n)), 0.0)
-    @btime fill!(FixedSizeVectorDefault{Float64}(undef, $(n)), 0.0)
-end
-```
-
-## Constprop of length{.scrollable}
-
-```{julia}
-# Light black is unreadable in dark mode, replace it with a different colour.
-
-Base.text_colors[:light_black] = Base.text_colors[:light_white]
-nothing
-```
-
-```{julia}
-#| echo: true
-
-using FixedSizeArrays
-
-@noinline get_len(A::AbstractArray) = length(A)
-
-code_llvm(() -> get_len(Vector{Float64}(undef, 3)), (); debuginfo=:none)
-```
-
-## Constprop of length (cont.)
-
-```{julia}
-#| echo: true
-
-code_llvm(() -> get_len(FixedSizeVector{Float64}(undef, 3)), (); debuginfo=:none)
-```
-
-## Better effects inference
-
-```{julia}
-#| echo: true
-
-using FixedSizeArrays
-
-@noinline reshape_2_2(v::AbstractVector{Float64}) = reshape(v, 2, 2)
-
-Base.infer_effects(() -> reshape_2_2(Vector{Float64}(undef, 3)), ())
-```
-```{julia}
-#| echo: true
-
-Base.infer_effects(() -> reshape_2_2(FixedSizeVector{Float64}(undef, 3)), ())
-```
-```{julia}
-#| echo: true
-
-Base.infer_effects(() -> reshape_2_2(Vector{Float64}(undef, 4)), ())
-```
-```{julia}
-#| echo: true
-
-Base.infer_effects(() -> reshape_2_2(FixedSizeVector{Float64}(undef, 4)), ())
-```
-
-## Eliding memory allocations
-
-```{julia}
-#| echo: true
-
-using FixedSizeArrays, Random
-
-function g(T)
-    v = T(undef, 250)
-    rand!(v)
-    return foldl(+, v)
-end
-
-@info "Vector" allocations=@allocated g(Vector{Float64})
-@info "FixedSizeVector" allocations=@allocated g(FixedSizeVectorDefault{Float64})
-```
-
-## Faster gradient with Enzyme
-
-<!-- This requires Julia v1.11, can't be done on nightly because Enzyme is -->
-<!-- broken, so we have to use a non-executable block of code. -->
-
-```{.julia code-line-numbers="false"}
-julia> using BenchmarkTools, FixedSizeArrays, Enzyme
-
-julia> function g(x::AbstractVector{T}, y::AbstractVector{T}) where {T}
-           sum = zero(float(T))
-           for idx in eachindex(x, y)
-               sum += sin(x[idx]) ^ 2 + cos(y[idx]) ^ 2
-           end
-           return sum
-       end
-g (generic function with 1 method)
-
-julia> @btime gradient(Forward, g, x, y) setup=(x = randn(3); y = randn(3));
-  753.210 ns (28 allocations: 1.09 KiB)
-
-julia> @btime gradient(Forward, g, x, y) setup=(x = FixedSizeArray(randn(3)); y = FixedSizeArray(randn(3)));
-  487.737 ns (20 allocations: 880 bytes)
-```
-
-# Conclusions
-
-* Future improvements
-    * Missing pieces of interface?
-    * More compiler analysis (inter-procedural escape analysis)
-* I really wish Base had separate Array and List
+# Introduction to OrdinaryDiffEq
+# Writing fast Julia code
+# Autodiff
+# PDEs
+# GPUs
+# Callbacks
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->

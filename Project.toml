@@ -1,10 +1,10 @@
 [deps]
+ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
-FixedSizeArrays = "3821ddf9-e5b5-40d5-8e25-6813ab96b5e2"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 quarto_jll = "b7163347-bfae-5fd9-aba4-19f139889d78"
 
 [compat]
 BenchmarkTools = "1.6"
-FixedSizeArrays = "1"
 julia = "1.11"
 quarto_jll = "1.7"

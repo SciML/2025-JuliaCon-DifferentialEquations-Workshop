@@ -34,9 +34,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: julia-actions/install-juliaup@v2
-      with:
-        channel: 'nightly'
+    - uses: julia-actions/setup-julia@v2
 
     - name: Load Julia packages from cache
       id: julia-cache
