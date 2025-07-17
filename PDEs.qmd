@@ -87,8 +87,7 @@ prob_ode_brusselator_2d = ODEProblem(brusselator_2d_loop, u0, (0.0, 11.5), p)
 ## Out of the box performance
 ```{julia}
 #| output: false 
-#compile
-@time solve(prob_ode_brusselator_2d)
+@time solve(prob_ode_brusselator_2d) #compile
 ```
 
 ```{julia}
@@ -119,8 +118,7 @@ prob_ode_brusselator_2d_sparse = ODEProblem(f, u0, (0.0, 11.5), p)
 
 ```{julia}
 #| output: false 
-#compile
-@time solve(prob_ode_brusselator_2d_sparse)
+@time solve(prob_ode_brusselator_2d_sparse) #compile
 ```
 
 ```{julia}
