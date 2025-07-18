@@ -1,9 +1,12 @@
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+IncompleteLU = "40713840-3770-5561-ab4c-a76e7d0d7895"
+LinearSolve = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 SparseConnectivityTracer = "9f842d2f-2579-4b1d-911e-f412cf18a3f5"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 quarto_jll = "b7163347-bfae-5fd9-aba4-19f139889d78"
 
 [compat]

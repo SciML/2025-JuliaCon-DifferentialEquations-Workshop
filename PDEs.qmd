@@ -23,7 +23,6 @@ function f(x,y,t)
     end
 end
 ```
-With boundary conditions
 
 $$
 \begin{align}
@@ -86,30 +85,28 @@ prob_ode_brusselator_2d = ODEProblem(brusselator_2d_loop, u0, (0.0, 11.5), p)
 
 ## Out of the box performance
 ```{julia}
-#| output: false 
-@time solve(prob_ode_brusselator_2d) #compile
+#| output: false
+solve(prob_ode_brusselator_2d) #compile
+solve(prob_ode_brusselator_2d, DefaultODEAlgorithm()) #compile
 ```
-
 ```{julia}
 #| echo: true
-@time solve(prob_ode_brusselator_2d)
+@time solve(prob_ode_brusselator_2d);
+@time solve(prob_ode_brusselator_2d, DefaultODEAlgorithm());
 ```
 ---
 
 ## Sparse Jacobian
 ```{julia}
 #| echo: true
+#| output: false
 using SparseConnectivityTracer, ADTypes
 detector = TracerSparsityDetector()
 du0 = copy(u0)
 jac_sparsity = ADTypes.jacobian_sparsity(
     (du, u) -> brusselator_2d_loop(du, u, p, 0.0), du0, u0, detector)
-```
-
-```{julia}
-#| echo: true
 brusselator_f_sparse = ODEFunction(brusselator_2d_loop; jac_prototype = float.(jac_sparsity))
-prob_ode_brusselator_2d_sparse = ODEProblem(f, u0, (0.0, 11.5), p)
+brusselator_sparse = ODEProblem(brusselator_f_sparse, u0, (0.0, 11.5), p)
 ```
 
 ---
@@ -117,15 +114,57 @@ prob_ode_brusselator_2d_sparse = ODEProblem(f, u0, (0.0, 11.5), p)
 ## Timing Sparse Jacobian
 
 ```{julia}
-#| output: false 
-@time solve(prob_ode_brusselator_2d_sparse) #compile
+#| output: false
+solve(brusselator_sparse, DefaultODEAlgorithm()) #compile
 ```
+```{julia}
+#| echo: true
+@time solve(brusselator_sparse, DefaultODEAlgorithm());
+```
+
+---
+
+## Specialized Linear Solvers
+
+```{julia}
+#| echo: false
+using LinearSolve
+solve(brusselator_sparse, DefaultODEAlgorithm(linsolve=KLUFactorization())) #compile
+solve(brusselator_sparse, DefaultODEAlgorithm(linsolve=KrylovJL())); #compile
+```
+```{julia}
+#| echo: true
+using LinearSolve
+@time solve(brusselator_sparse, DefaultODEAlgorithm(linsolve=KLUFactorization()))
+@time solve(brusselator_sparse, DefaultODEAlgorithm(linsolve=KrylovJL()));
+```
+
+## Preconditioned Krylov
 
 ```{julia}
 #| echo: true
-@time solve(prob_ode_brusselator_2d_sparse)
+#| output: false
+using IncompleteLU
+function incompletelu(W, du, u, p, t, newW, Plprev, Prprev, solverdata)
+    if newW === nothing || newW
+        Pl = ilu(convert(AbstractMatrix, W), τ = 50.0)
+    else
+        Pl = Plprev
+    end
+    Pl, nothing
+end
 ```
-
+```{julia}
+solve(brusselator_sparse,
+    KenCarp47(linsolve = KrylovJL(), precs = incompletelu,
+        concrete_jac = true)); #compile
+```
+```{julia}
+#| echo: true
+@time solve(brusselator_sparse,
+    KenCarp47(linsolve = KrylovJL(), precs = incompletelu,
+        concrete_jac = true));
+```
 <!-- Local Variables: -->
 <!-- mode: markdown -->
 <!-- End: -->
