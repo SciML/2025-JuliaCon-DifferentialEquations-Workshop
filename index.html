@@ -31,6 +31,72 @@
       margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
       vertical-align: middle;
     }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+      }
+    pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+    div.sourceCode
+      { color: #f8f8f2;  }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span { color: #f8f8f2; } /* Normal */
+    code span.al { color: #f07178; } /* Alert */
+    code span.an { color: #d4d0ab; } /* Annotation */
+    code span.at { color: #00e0e0; } /* Attribute */
+    code span.bn { color: #d4d0ab; } /* BaseN */
+    code span.bu { color: #abe338; } /* BuiltIn */
+    code span.cf { color: #ffa07a; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #abe338; } /* Char */
+    code span.cn { color: #ffd700; } /* Constant */
+    code span.co { color: #f8f8f2; font-style: italic; } /* Comment */
+    code span.cv { color: #ffd700; } /* CommentVar */
+    code span.do { color: #f8f8f2; } /* Documentation */
+    code span.dt { color: #ffa07a; } /* DataType */
+    code span.dv { color: #d4d0ab; } /* DecVal */
+    code span.er { color: #f07178; text-decoration: underline; } /* Error */
+    code span.ex { color: #00e0e0; font-weight: bold; } /* Extension */
+    code span.fl { color: #d4d0ab; } /* Float */
+    code span.fu { color: #ffa07a; } /* Function */
+    code span.im { color: #abe338; } /* Import */
+    code span.in { color: #d4d0ab; } /* Information */
+    code span.kw { color: #ffa07a; font-weight: bold; } /* Keyword */
+    code span.op { color: #ffa07a; } /* Operator */
+    code span.ot { color: #00e0e0; } /* Other */
+    code span.pp { color: #dcc6e0; } /* Preprocessor */
+    code span.re { color: #00e0e0; background-color: #f8f8f2; } /* RegionMarker */
+    code span.sc { color: #abe338; } /* SpecialChar */
+    code span.ss { color: #abe338; } /* SpecialString */
+    code span.st { color: #abe338; } /* String */
+    code span.va { color: #00e0e0; } /* Variable */
+    code span.vs { color: #abe338; } /* VerbatimString */
+    code span.wa { color: #dcc6e0; } /* Warning */
   </style>
   <link rel="stylesheet" href="index_files/libs/revealjs/dist/theme/quarto-b19c96388aaa058ca4a2f70bce9039b2.css">
   <link href="index_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
@@ -201,13 +267,151 @@ Chris Rackakus
 <!-- End: -->
 </section>
 
+<section>
 <section class="title-slide slide level1 center">
 <h1>Optimizing solves of PDEs</h1>
+
+</section>
+<section class="slide level2">
+<h2>Brusselator</h2>
+<p><span class="math display">\[
+\begin{align}
+\frac{\partial U}{\partial t} &amp;= 1 + U^2V - 4.4U + A\nabla^2U + f(x,y,t)\\
+\frac{\partial V}{\partial t} &amp;= 3.4U -U^2V - \alpha\nabla^2V \\
+\end{align}
+\]</span></p>
+<div id="2" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">f</span>(x,y,t)</span>
+<span id="cb1-2"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> t <span class="op">&lt;</span> <span class="fl">1.1</span></span>
+<span id="cb1-3"><a href="" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="fl">0</span></span>
+<span id="cb1-4"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elseif</span> (x<span class="op">-</span><span class="fl">0.3</span>)<span class="op">^</span><span class="fl">2</span><span class="fu">+</span>(y<span class="op">-</span><span class="fl">0.6</span>)<span class="op">^</span><span class="fl">2</span> <span class="op">&gt;</span> <span class="fl">0.1</span><span class="op">^</span><span class="fl">2</span> </span>
+<span id="cb1-5"><a href="" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="fl">0</span></span>
+<span id="cb1-6"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb1-7"><a href="" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="fl">5</span></span>
+<span id="cb1-8"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb1-9"><a href="" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><span class="math display">\[
+\begin{align}
+U(x, y, 0) &amp;= 22\cdot (y(1-y))^{3/2} \\
+V(x, y, 0) &amp;= 27\cdot (x(1-x))^{3/2} \\
+U(x+1,y,t) &amp;= U(x,y,t) \\
+V(x,y+1,t) &amp;= V(x,y,t)
+\end{align}
+\]</span></p>
+</section>
+<section class="slide level2">
+<h2>Brusselator in Julia</h2>
+<div id="4" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">OrdinaryDiffEq</span>, <span class="bu">LinearAlgebra</span>, <span class="bu">SparseArrays</span></span>
+<span id="cb2-2"><a href="" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> N <span class="op">=</span> <span class="fl">32</span></span>
+<span id="cb2-4"><a href="" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> xyd_brusselator <span class="op">=</span> <span class="fu">range</span>(<span class="fl">0</span>, stop <span class="op">=</span> <span class="fl">1</span>, length <span class="op">=</span> N)</span>
+<span id="cb2-5"><a href="" aria-hidden="true" tabindex="-1"></a><span class="fu">brusselator_f</span>(x, y, t) <span class="op">=</span> (((x <span class="op">-</span> <span class="fl">0.3</span>)<span class="op">^</span><span class="fl">2</span> <span class="op">+</span> (y <span class="op">-</span> <span class="fl">0.6</span>)<span class="op">^</span><span class="fl">2</span>) <span class="op">&lt;=</span> <span class="fl">0.1</span><span class="op">^</span><span class="fl">2</span>) <span class="op">*</span> (t <span class="op">&gt;=</span> <span class="fl">1.1</span>) <span class="op">*</span> <span class="fl">5.0</span></span>
+<span id="cb2-6"><a href="" aria-hidden="true" tabindex="-1"></a><span class="fu">limit</span>(a, N) <span class="op">=</span> a <span class="op">==</span> N <span class="op">+</span> <span class="fl">1</span> ? <span class="fl">1</span> <span class="op">:</span> a <span class="op">==</span> <span class="fl">0</span> ? N <span class="op">:</span> a</span>
+<span id="cb2-7"><a href="" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">brusselator_2d_loop</span>(du, u, p, t)</span>
+<span id="cb2-8"><a href="" aria-hidden="true" tabindex="-1"></a>    A, B, alpha, dx <span class="op">=</span> p</span>
+<span id="cb2-9"><a href="" aria-hidden="true" tabindex="-1"></a>    alpha <span class="op">=</span> alpha <span class="op">/</span> dx<span class="op">^</span><span class="fl">2</span></span>
+<span id="cb2-10"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@inbounds</span> <span class="cf">for</span> I <span class="kw">in</span> <span class="fu">CartesianIndices</span>((N, N))</span>
+<span id="cb2-11"><a href="" aria-hidden="true" tabindex="-1"></a>        i, j <span class="op">=</span> <span class="fu">Tuple</span>(I)</span>
+<span id="cb2-12"><a href="" aria-hidden="true" tabindex="-1"></a>        x, y <span class="op">=</span> xyd_brusselator[I[<span class="fl">1</span>]], xyd_brusselator[I[<span class="fl">2</span>]]</span>
+<span id="cb2-13"><a href="" aria-hidden="true" tabindex="-1"></a>        ip1, im1, jp1, jm1 <span class="op">=</span> <span class="fu">limit</span>(i <span class="op">+</span> <span class="fl">1</span>, N), <span class="fu">limit</span>(i <span class="op">-</span> <span class="fl">1</span>, N), <span class="fu">limit</span>(j <span class="op">+</span> <span class="fl">1</span>, N),</span>
+<span id="cb2-14"><a href="" aria-hidden="true" tabindex="-1"></a>        <span class="fu">limit</span>(j <span class="op">-</span> <span class="fl">1</span>, N)</span>
+<span id="cb2-15"><a href="" aria-hidden="true" tabindex="-1"></a>        du[i, j, <span class="fl">1</span>] <span class="op">=</span> alpha <span class="op">*</span> (u[im1, j, <span class="fl">1</span>] <span class="op">+</span> u[ip1, j, <span class="fl">1</span>] <span class="op">+</span> u[i, jp1, <span class="fl">1</span>] <span class="op">+</span> u[i, jm1, <span class="fl">1</span>] <span class="op">-</span></span>
+<span id="cb2-16"><a href="" aria-hidden="true" tabindex="-1"></a>                       <span class="fl">4</span>u[i, j, <span class="fl">1</span>]) <span class="op">+</span></span>
+<span id="cb2-17"><a href="" aria-hidden="true" tabindex="-1"></a>                      B <span class="op">+</span> u[i, j, <span class="fl">1</span>]<span class="op">^</span><span class="fl">2</span> <span class="op">*</span> u[i, j, <span class="fl">2</span>] <span class="op">-</span> (A <span class="op">+</span> <span class="fl">1</span>) <span class="op">*</span> u[i, j, <span class="fl">1</span>] <span class="op">+</span></span>
+<span id="cb2-18"><a href="" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">brusselator_f</span>(x, y, t)</span>
+<span id="cb2-19"><a href="" aria-hidden="true" tabindex="-1"></a>        du[i, j, <span class="fl">2</span>] <span class="op">=</span> alpha <span class="op">*</span> (u[im1, j, <span class="fl">2</span>] <span class="op">+</span> u[ip1, j, <span class="fl">2</span>] <span class="op">+</span> u[i, jp1, <span class="fl">2</span>] <span class="op">+</span> u[i, jm1, <span class="fl">2</span>] <span class="op">-</span></span>
+<span id="cb2-20"><a href="" aria-hidden="true" tabindex="-1"></a>                       <span class="fl">4</span>u[i, j, <span class="fl">2</span>]) <span class="op">+</span></span>
+<span id="cb2-21"><a href="" aria-hidden="true" tabindex="-1"></a>                      A <span class="op">*</span> u[i, j, <span class="fl">1</span>] <span class="op">-</span> u[i, j, <span class="fl">1</span>]<span class="op">^</span><span class="fl">2</span> <span class="op">*</span> u[i, j, <span class="fl">2</span>]</span>
+<span id="cb2-22"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb2-23"><a href="" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb2-24"><a href="" aria-hidden="true" tabindex="-1"></a>p <span class="op">=</span> (<span class="fl">3.4</span>, <span class="fl">1.0</span>, <span class="fl">10.0</span>, <span class="fu">step</span>(xyd_brusselator))</span>
+<span id="cb2-25"><a href="" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">init_brusselator_2d</span>(xyd)</span>
+<span id="cb2-27"><a href="" aria-hidden="true" tabindex="-1"></a>    N <span class="op">=</span> <span class="fu">length</span>(xyd)</span>
+<span id="cb2-28"><a href="" aria-hidden="true" tabindex="-1"></a>    u <span class="op">=</span> <span class="fu">zeros</span>(N, N, <span class="fl">2</span>)</span>
+<span id="cb2-29"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> I <span class="kw">in</span> <span class="fu">CartesianIndices</span>((N, N))</span>
+<span id="cb2-30"><a href="" aria-hidden="true" tabindex="-1"></a>        x <span class="op">=</span> xyd[I[<span class="fl">1</span>]]</span>
+<span id="cb2-31"><a href="" aria-hidden="true" tabindex="-1"></a>        y <span class="op">=</span> xyd[I[<span class="fl">2</span>]]</span>
+<span id="cb2-32"><a href="" aria-hidden="true" tabindex="-1"></a>        u[I, <span class="fl">1</span>] <span class="op">=</span> <span class="fl">22</span> <span class="op">*</span> (y <span class="op">*</span> (<span class="fl">1</span> <span class="op">-</span> y))<span class="op">^</span>(<span class="fl">3</span> <span class="op">/</span> <span class="fl">2</span>)</span>
+<span id="cb2-33"><a href="" aria-hidden="true" tabindex="-1"></a>        u[I, <span class="fl">2</span>] <span class="op">=</span> <span class="fl">27</span> <span class="op">*</span> (x <span class="op">*</span> (<span class="fl">1</span> <span class="op">-</span> x))<span class="op">^</span>(<span class="fl">3</span> <span class="op">/</span> <span class="fl">2</span>)</span>
+<span id="cb2-34"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb2-35"><a href="" aria-hidden="true" tabindex="-1"></a>    u</span>
+<span id="cb2-36"><a href="" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb2-37"><a href="" aria-hidden="true" tabindex="-1"></a>u0 <span class="op">=</span> <span class="fu">init_brusselator_2d</span>(xyd_brusselator)</span>
+<span id="cb2-38"><a href="" aria-hidden="true" tabindex="-1"></a>prob_ode_brusselator_2d <span class="op">=</span> <span class="fu">ODEProblem</span>(brusselator_2d_loop, u0, (<span class="fl">0.0</span>, <span class="fl">11.5</span>), p)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section class="slide level2">
+<h2>Out of the box performance</h2>
+<div id="8" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> <span class="fu">solve</span>(prob_ode_brusselator_2d);</span>
+<span id="cb3-2"><a href="" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> <span class="fu">solve</span>(prob_ode_brusselator_2d, <span class="fu">DefaultODEAlgorithm</span>());</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  7.488446 seconds (856.78 k allocations: 532.571 MiB, 0.67% gc time)
+  1.884564 seconds (210.07 k allocations: 210.627 MiB, 1.07% gc time)</code></pre>
+</div>
+</div>
+</section>
+<section class="slide level2">
+<h2>Sparse Jacobian</h2>
+<div id="10" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb5-1"><a href="" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">SparseConnectivityTracer</span>, <span class="bu">ADTypes</span></span>
+<span id="cb5-2"><a href="" aria-hidden="true" tabindex="-1"></a>detector <span class="op">=</span> <span class="fu">TracerSparsityDetector</span>()</span>
+<span id="cb5-3"><a href="" aria-hidden="true" tabindex="-1"></a>du0 <span class="op">=</span> <span class="fu">copy</span>(u0)</span>
+<span id="cb5-4"><a href="" aria-hidden="true" tabindex="-1"></a>jac_sparsity <span class="op">=</span> ADTypes.<span class="fu">jacobian_sparsity</span>(</span>
+<span id="cb5-5"><a href="" aria-hidden="true" tabindex="-1"></a>    (du, u) <span class="op">-&gt;</span> <span class="fu">brusselator_2d_loop</span>(du, u, p, <span class="fl">0.0</span>), du0, u0, detector)</span>
+<span id="cb5-6"><a href="" aria-hidden="true" tabindex="-1"></a>brusselator_f_sparse <span class="op">=</span> <span class="fu">ODEFunction</span>(brusselator_2d_loop; jac_prototype <span class="op">=</span> <span class="fu">float</span>.(jac_sparsity))</span>
+<span id="cb5-7"><a href="" aria-hidden="true" tabindex="-1"></a>brusselator_sparse <span class="op">=</span> <span class="fu">ODEProblem</span>(brusselator_f_sparse, u0, (<span class="fl">0.0</span>, <span class="fl">11.5</span>), p)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section class="slide level2">
+<h2>Timing Sparse Jacobian</h2>
+<div id="14" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> <span class="fu">solve</span>(brusselator_sparse, <span class="fu">DefaultODEAlgorithm</span>());</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  1.888330 seconds (210.07 k allocations: 211.222 MiB, 0.91% gc time)</code></pre>
+</div>
+</div>
+</section>
+<section class="slide level2">
+<h2>Specialized Linear Solvers</h2>
+<div id="18" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">LinearSolve</span></span>
+<span id="cb8-2"><a href="" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> <span class="fu">solve</span>(brusselator_sparse, <span class="fu">DefaultODEAlgorithm</span>(linsolve<span class="op">=</span><span class="fu">KLUFactorization</span>()))</span>
+<span id="cb8-3"><a href="" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> <span class="fu">solve</span>(brusselator_sparse, <span class="fu">DefaultODEAlgorithm</span>(linsolve<span class="op">=</span><span class="fu">KrylovJL</span>()));</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  1.685877 seconds (16.39 k allocations: 50.085 MiB)
+  1.896928 seconds (208.77 k allocations: 211.256 MiB, 0.71% gc time)</code></pre>
+</div>
+</div>
+</section>
+<section class="slide level2">
+<h2>Preconditioned Krylov</h2>
+<div id="20" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb10-1"><a href="" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">IncompleteLU</span></span>
+<span id="cb10-2"><a href="" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">incompletelu</span>(W, du, u, p, t, newW, Plprev, Prprev, solverdata)</span>
+<span id="cb10-3"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> newW <span class="op">===</span> <span class="cn">nothing</span> <span class="op">||</span> newW</span>
+<span id="cb10-4"><a href="" aria-hidden="true" tabindex="-1"></a>        Pl <span class="op">=</span> <span class="fu">ilu</span>(<span class="fu">convert</span>(<span class="dt">AbstractMatrix</span>, W), τ <span class="op">=</span> <span class="fl">50.0</span>)</span>
+<span id="cb10-5"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb10-6"><a href="" aria-hidden="true" tabindex="-1"></a>        Pl <span class="op">=</span> Plprev</span>
+<span id="cb10-7"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb10-8"><a href="" aria-hidden="true" tabindex="-1"></a>    Pl, <span class="cn">nothing</span></span>
+<span id="cb10-9"><a href="" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="24" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb11-1"><a href="" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> <span class="fu">solve</span>(brusselator_sparse,</span>
+<span id="cb11-2"><a href="" aria-hidden="true" tabindex="-1"></a>    <span class="fu">KenCarp47</span>(linsolve <span class="op">=</span> <span class="fu">KrylovJL</span>(), precs <span class="op">=</span> incompletelu,</span>
+<span id="cb11-3"><a href="" aria-hidden="true" tabindex="-1"></a>        concrete_jac <span class="op">=</span> <span class="cn">true</span>));</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  0.253804 seconds (16.86 k allocations: 54.058 MiB, 3.43% gc time)</code></pre>
+</div>
+</div>
 <!-- Local Variables: -->
 <!-- mode: markdown -->
 <!-- End: -->
-</section>
-
+</section></section>
 <section class="title-slide slide level1 center">
 <h1>Faster Solves with GPUs</h1>
 <!-- Local Variables: -->
