@@ -1,6 +1,8 @@
 [deps]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+DiffEqGPU = "071ae1c0-96b5-11e9-1965-c90190d839ea"
 IncompleteLU = "40713840-3770-5561-ab4c-a76e7d0d7895"
 LinearSolve = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
