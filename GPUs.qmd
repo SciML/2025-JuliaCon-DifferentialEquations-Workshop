@@ -68,12 +68,9 @@ monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
 using StaticArrays
 
 function lorenz2(u, p, t)
-    σ = p[1]
-    ρ = p[2]
-    β = p[3]
-    du1 = σ * (u[2] - u[1])
-    du2 = u[1] * (ρ - u[3]) - u[2]
-    du3 = u[1] * u[2] - β * u[3]
+    du1 = p[1] * (u[2] - u[1])
+    du2 = u[1] * (p[2] - u[3]) - u[2]
+    du3 = u[1] * u[2] - p[3] * u[3]
     return SVector{3}(du1, du2, du3)
 end
 
