@@ -244,6 +244,9 @@ Plots.plot(sol, tspan = (1e-6, 1e5), xscale = :log10, yscale=:log10)
 
 ## Faster Loading Times / Decreased Depedendency Usage
 
+DifferentialEquations.jl loads a full set of solvers, but if you know exactly the
+solver that you want, you can simply load the subpackage with that solver!
+
 ```{julia}
 import OrdinaryDiffEqTsit5 as ODE5
 
@@ -265,11 +268,192 @@ Plots.plot(sol, idxs=(1,2,3))
 
 ## SplitODEProblem and IMEX methods
 
-## DyanmicalODEProblem and Symplectic Integrators
+Sometimes you may have one part of the problem operating at a much faster time
+scale than the other. In that case, you can split the problem and use a method
+for stiff equations on the fast part and a method for explicit integrators on
+the slow part. This is calls an implicit-explicit or IMEX integration. If we
+define:
+
+$$
+u' = f(u,p,t) + g(u,p,t)
+$$
+
+## Example Defining A SplitODEProblem
+
+```{julia}
+u = rand(4, 2)
+f1 = (du, u, p, t) -> du .= 2u
+f2 = (du, u, p, t) -> du .= 2u
+prob = SplitODEProblem(f1, f2, u, (0.0, 1.0))
+sol = solve(prob, KenCarp4());
+```
+
+NOTE: SplitODEProblems can be solved by standard ODE solvers (by definition, just
+putting them back together) but this affords no performance advantage, it's simply
+a convenience.
+
+## Special Case: Semilinear ODE Problem
+
+There is a special case for a split ODE problem where $f(u,p,t)$ is linear, i.e.
+$f(u,p,t)=Au$. When this occurs, ODE solvers can specialize on being able to solve
+that part exactly via the matrix exponential $exp(At)v$, and thus we can use
+speical integrators known as Exponential Runge-Kutta Methods. These can be fast
+for PDE discretizations that tend of have this form.
+
+```{julia}
+using OrdinaryDiffEqExponentialRK, SciMLOperators
+A = [2.0 -1.0; -1.0 2.0]
+linnonlin_f1 = MatrixOperator(A)
+linnonlin_f2 = (du, u, p, t) -> du .= 1.01 .* u
+linnonlin_fun_iip = SplitFunction(linnonlin_f1, linnonlin_f2)
+tspan = (0.0, 1.0)
+u0 = [0.1, 0.1]
+prob = SplitODEProblem(linnonlin_fun_iip, u0, tspan)
+sol = solve(prob, ETDRK4(), dt = 1 / 4)
+```
 
 ## Linear Specialized Methods
 
+Similarly, if $u'=f$ is almost linear, there are specializations. 
+
+* For $u'=Au$, the analytical solution is $u(t) = exp(At)u_0$ which has fast solvers in ExponentialUtilities.jl. 
+* For $u'=A(t)u$, there are Magnus methods
+* For $u'=A(u)u$, there are Lie group methods
+
+By using matrix exponentials, these methods can have good conservation properties.
+
+## Example Magnus Method Solve
+
+```{julia}
+using OrdinaryDiffEqLinear, SciMLOperators
+function update_func(A, u, p, t)
+    A[1, 1] = 0
+    A[2, 1] = sin(t)
+    A[1, 2] = -1
+    A[2, 2] = 0
+end
+A0 = ones(2, 2)
+A = MatrixOperator(A0, update_func! = update_func)
+u0 = ones(2)
+tspan = (0.0, 30.0)
+prob = ODEProblem(A, u0, tspan)
+sol = solve(prob, MagnusGL6(), dt = 1 / 4)
+```
+
+## DyanmicalODEProblem and Symplectic Integrators
+
+```{julia}
+using OrdinaryDiffEqSymplecticRK, LinearAlgebra, ForwardDiff, Plots; gr()
+H(q,p) = norm(p)^2/2 - inv(norm(q))
+L(q,p) = q[1]*p[2] - p[1]*q[2]
+
+pdot(dp,p,q,params,t) = ForwardDiff.gradient!(dp, q->-H(q, p), q)
+qdot(dq,p,q,params,t) = ForwardDiff.gradient!(dq, p-> H(q, p), p)
+
+initial_position = [.4, 0]
+initial_velocity = [0., 2.]
+initial_cond = (initial_position, initial_velocity)
+initial_first_integrals = (H(initial_cond...), L(initial_cond...))
+tspan = (0,100.)
+prob = DynamicalODEProblem(pdot, qdot, initial_velocity, initial_position, tspan)
+sol = solve(prob, KahanLi6(), dt=1//10);
+```
+
+## Symplectic Integrator Long Time Solution
+
+```{julia}
+plot_orbit(sol) = plot(sol,idxs=(3,4), lab="Orbit", title="Kepler Problem Solution")
+
+function plot_first_integrals(sol, H, L)
+    plot(initial_first_integrals[1].-map(u->H(u.x[2], u.x[1]), sol.u), lab="Energy variation", title="First Integrals")
+    plot!(initial_first_integrals[2].-map(u->L(u.x[2], u.x[1]), sol.u), lab="Angular momentum variation")
+end
+analysis_plot(sol, H, L) = plot(plot_orbit(sol), plot_first_integrals(sol, H, L))
+analysis_plot(sol, H, L)
+```
+
+## Normal Integrator Long Time Solution
+
+```{julia}
+sol = solve(prob, DE.Tsit5());
+analysis_plot(sol, H, L)
+```
+
 ## Mass Matrices and Differential-Algebraic Equations (DAEs)
+
+Instead of just an ODE $u'=f(u,p,t)$, DifferentialEquations.jl can express mass
+matrix ODEs:
+
+$$
+Mu' = f(u,p,t)
+$$
+
+In many cases this can be a performance improvement if $M$ is sparse (since $M^{-1}$)
+would likely be dense! However, it can be more than just a performance improvement.
+Mass matrices can be used to impose constraints when $M$ is singular.
+
+This constrained ODE is called a DAE.
+
+## DAE via Mass Matrix Example
+
+Say we want to solve:
+
+$$
+\begin{aligned}
+\frac{dy_1}{dt} &= -0.04 y_1 + 10^4 y_2 y_3 \\
+\frac{dy_2}{dt} &=  0.04 y_1 - 10^4 y_2 y_3 - 3*10^7 y_{2}^2 \\
+1 &=  y_{1} + y_{2} + y_{3} \\
+\end{aligned}
+$$
+
+Let's write this in mass matrix form:
+
+$$
+\begin{align}
+\begin{bmatrix}
+1 & 0 & 0\\
+0 & 1 & 0\\
+0 & 0 & 0
+\end{bmatrix} \begin{bmatrix}
+y_1'\\
+y_2'\\
+y_3'
+\end{bmatrix} = \begin{bmatrix}
+-0.04 y_1 + 10^4 y_2 y_3\\
+0.04 y_1 - 10^4 y_2 y_3 - 3*10^7 y_{2}^2\\
+y_{1} + y_{2} + y_{3} - 1
+\end{bmatrix} 
+\end{align}
+$$
+
+If you do the matrix-vector multiplication out, you see that last row of zeros simply gives that the last equation is $0 = y_{1} + y_{2} + y_{3} - 1$. Once you see that trick, it's immediately clear how mass matrices can write out any constraint equation $g$. Done.
+
+## DAE via Mass Matrix Example
+
+```{julia}
+function rober(du, u, p, t)
+    y₁, y₂, y₃ = u
+    k₁, k₂, k₃ = p
+    du[1] = -k₁ * y₁ + k₃ * y₂ * y₃
+    du[2] = k₁ * y₁ - k₃ * y₂ * y₃ - k₂ * y₂^2
+    du[3] = y₁ + y₂ + y₃ - 1
+    nothing
+end
+M = [1.0 0 0
+     0 1.0 0
+     0 0 0]
+mmf = DE.ODEFunction(rober, mass_matrix = M)
+prob_mm = DE.ODEProblem(mmf, [1.0, 0.0, 0.0], (0.0, 1e5), (0.04, 3e7, 1e4))
+sol = DE.solve(prob_mm, DE.Rodas5(), reltol = 1e-8, abstol = 1e-8)
+
+Plots.plot(sol, xscale = :log10, tspan = (1e-6, 1e5), layout = (3, 1))
+```
+
+## DAEs More Information
+
+For a deeper dive into methods for defining DAEs, see the blog post:
+
+https://www.stochasticlifestyle.com/machine-learning-with-hard-constraints-neural-differential-algebraic-equations-daes-as-a-general-formalism/
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->
