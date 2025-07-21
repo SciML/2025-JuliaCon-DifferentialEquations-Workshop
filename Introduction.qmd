@@ -1,4 +1,188 @@
-# Introduction to OrdinaryDiffEq
+# Introduction to the Workshop
+
+## Who this workshop is for
+
+* This workshop is for those who want to learn about the deep features of DifferentialEquations.jl for ODEs
+    * It is assumed you know what ODEs are and what they are useful for
+    * We will not cover SDEs, DDEs, jump processes, etc., it's just ODEs
+* We assume that you know a good amount of Julia
+
+For a more beginner version, see on Youtube:
+
+"Intro to solving differential equations in Julia"
+
+## Note about coming changes
+
+There will soon be a new major release, DifferentialEquations.jl v8!
+
+* The major change will be that non-ODE dependencies will be removed from DifferentialEquations.jl
+    * The documentation will still cover all types of differential equations
+    * For things other than ODEs, you will be required to import the solver packages
+        * SDEs: StochasticDiffEq.jl
+        * DDEs: DelayDiffEq.jl
+        * ...
+    * The default solvers will be associated with those domain packages
+* Result: DifferentialEquations.jl will
+    * have much fewer dependencies
+    * be much faster to load 
+    * be focused on ODEs
+
+With that in mind, let's start the show!
+
+# Introduction to DifferentialEquations.jl
+
+Let's do a quick runthrough of the basics!
+
+## Defining and solving an ODE
+
+Let's solve the Lorenz equations
+
+$$
+\begin{aligned}
+\frac{dx}{dt} &= σ(y-x) \\
+\frac{dy}{dt} &= x(ρ-z) - y \\
+\frac{dz}{dt} &= xy - βz \\
+\end{aligned}
+$$
+
+## Defining and solving an ODE
+
+```{julia}
+import DifferentialEquations as DE
+
+function lorenz!(du, u, p, t)
+    x, y, z = u
+    σ, ρ, β = p
+    du[1] = dx = σ * (y - x)
+    du[2] = dy = x * (ρ - z) - y
+    du[3] = dz = x * y - β * z
+end
+
+u0 = [1.0, 0.0, 0.0]
+tspan = (0.0, 1.0)
+p = [10.0, 28.0, 8 / 3]
+prob = DE.ODEProblem(lorenz!, u0, tspan, p)
+```
+
+## Defining and solving an ODE
+
+```{julia}
+sol = DE.solve(prob)
+```
+
+## Plotting the Solution
+
+```{julia}
+import Plots
+Plots.plot(sol, idxs = (1, 2, 3))
+```
+
+## Tweaking the tolerances
+
+```{julia}
+sol = DE.solve(prob; abstol=1e-8, reltol=1e-8)
+```
+
+* `abstol`: controls behavior near zero
+* `reltol`: general tolerance
+
+## Interpolating the solution
+
+```{julia}
+sol(2.0)
+```
+
+```{julia}
+sol([1.0,2.0])
+```
+
+You can even get derivatives!
+
+```{julia}
+sol([1.0,2.0], Val{2}) # 2nd derivative
+```
+
+## Controlling Saving
+
+```{julia}
+sol = DE.solve(prob; saveat = 1.0)
+```
+
+```{julia}
+sol = DE.solve(prob; saveat = [1.0,5.0,100.0])
+```
+
+## Choosing Solvers
+
+```{julia}
+sol = DE.solve(prob, DE.Tsit5())
+```
+
+```{julia}
+sol = DE.solve(prob, DE.Vern9())
+```
+
+## What Solvers Are There?
+
+```
+  OrdinaryDiffEq.jl Solvers: 299
+
+  | Category                | Count |
+  |-------------------------|-------|
+  | Adams-Bashforth-Moulton | 13    |
+  | BDF Methods             | 18    |
+  | Explicit RK             | 1     |
+  | Exponential RK          | 17    |
+  | Extrapolation           | 7     |
+  | Feagin                  | 3     |
+  | FIRK                    | 4     |
+  | Function Map            | 1     |
+  | High Order RK           | 4     |
+  | IMEX Multistep          | 2     |
+  | Linear/Magnus           | 16    |
+  | Low Order RK            | 26    |
+  | Low Storage RK          | 45    |
+  | Nordsieck               | 4     |
+  | PDIRK                   | 1     |
+  | PRK                     | 1     |
+  | QPRK                    | 1     |
+  | RKN (Nyström)           | 17    |
+  | Rosenbrock              | 37    |
+  | SDIRK                   | 29    |
+  | SSPRK                   | 13    |
+  | Stabilized IRK          | 1     |
+  | Stabilized RK           | 6     |
+  | Symplectic RK           | 18    |
+  | Taylor Series           | 2     |
+  | Tsit5                   | 1     |
+  | Verner                  | 4     |
+  | Core/Other              | 7     |
+
+  DiffEqDevTools.jl ODE Tableaus: 105
+
+  Total: 404
+```
+
+## What Solvers Are There?
+
+For complete information, see:
+
+https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/
+
+And the new OrdinaryDiffEq API pages!
+
+## What Solver Packages Are There?
+
+There are many different packages to be aware of which all use the same API:
+
+* OrdinaryDiffEq.jl: the main ODE solver package. Split into subpackages:
+    * `OrdinaryDiffEqTsit5`: Just the non-stiff 5th order adaptive Tsit5 method
+    * `OrdinaryDiffEqVerner`: The `VernX` high efficiency non-stiff methods
+    * `OrdinaryDiffEqRosenbrock`: The Rosenbrock methods, i.e. `Rosenbrock23` and `Rodas5P`, for small stiff systems
+    * `OrdinaryDiffEqBDF`: The BDF methods, `QNDF` and `FBDF`, for large stiff systems
+* Sundials.jl: Wrapper for SUNDIALS `CVODE` and `IDA`. Can be efficient for large stiff systems
+* LSODA.jl: Wrapper for the classic `lsoda`, tends to be generally good for small systems
+* ODEInterfaceDiffEq.jl: Wrappers for classic Fortran ODE solvers, including `dopri5` and `radau`
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->

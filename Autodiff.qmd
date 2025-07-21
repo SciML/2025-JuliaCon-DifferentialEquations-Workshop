@@ -1,5 +1,17 @@
-# Faster ODEs with Autodiff
+# Faster ODEs with Automatic Differentiation
 
+First a disambiguation...
+
+## Two ways that automatic differentiation is used
+
+1. For improving the solving process (particularly for implicit solvers)
+2. For calculating the derivative of the solution (w.r.t. parameters and initial conditions)
+
+## Quick Note: automatic differentiation is not symbolic or numerical differentiation
+
+Automatic differentiation is a mix: it is a compiler-based method which changes a 
+code into the code for computing the solution and its derivative simultaneously.
+                
 <!-- Local Variables: -->
 <!-- mode: markdown -->
 <!-- End: -->

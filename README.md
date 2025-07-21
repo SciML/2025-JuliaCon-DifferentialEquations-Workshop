@@ -1,5 +1,4 @@
-# JuliaCon 2025 OrdinaryDiffEq deepdive
-
+# JuliaCon 2025: A Deep Dive Into `DifferentialEquations.jl
 
 ## Rendering
 

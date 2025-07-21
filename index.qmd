@@ -1,11 +1,11 @@
 ---
-title: "How to use `OrdinaryDiffEq`"
-subtitle: "Simulations go brrr"
+title: "A Deep Dive Into `DifferentialEquations.jl`"
+subtitle: "Everything about ODEs"
 author:
   - name: "Oscar Smith"
     affiliation: "JuliaHub"
-  - name: "Chris Rackakus"
-    affiliation: "JuliaHub"
+  - name: "Chris Rackauckas"
+    affiliation: "JuliaHub, MIT"
 format:
   revealjs:
     code-copy: true
