@@ -263,9 +263,9 @@ sol = ODE5.solve(prob, ODE5.Tsit5())
 Plots.plot(sol, idxs=(1,2,3))
 ```
 
-## SplitODEProblem
+## SplitODEProblem and IMEX methods
 
-## Other forms: DyanmicalODEProblem
+## DyanmicalODEProblem and Symplectic Integrators
 
 ## Linear Specialized Methods
 
