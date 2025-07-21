@@ -11,7 +11,283 @@ First a disambiguation...
 
 Automatic differentiation is a mix: it is a compiler-based method which changes a 
 code into the code for computing the solution and its derivative simultaneously.
-                
+
+## Demonstration of symbolic forms of code
+
+```{julia}
+using Symbolics
+@variables x
+function f(x)
+    out = x
+    for i in 1:5
+        out *= sin(out)
+    end
+    out
+end
+sin(f(x))
+```
+
+## Demonstration of symbolic forms of code
+
+```{julia}
+Symbolics.derivative(sin(f(x)),x) 
+```
+
+## Automatic Differentiation done by hand
+
+```{julia}
+function f(x)
+    out = x
+    for i in 1:5
+        # sin(out) => chain rule sin' = cos
+        tmp = (sin(out[1]), out[2] * cos(out[1])) 
+        # out = out * tmp => product rule
+        out = (out[1] * tmp[1], out[1] * tmp[2] + out[2] * tmp[1])
+    end
+    out
+end
+function outer(x)
+    # sin(x) => chain rule sin' = cos
+    out1, out2 = f(x)
+    sin(out1), out2 * cos(out1)
+end
+dsinfx(x) = outer((x,1))[2]
+
+f((1,1))
+```
+
+## Validation
+
+```{julia}
+f((1,1))
+```
+
+```{julia}
+(substitute(sin(f(x)),x=>1), substitute(Symbolics.derivative(sin(f(x)),x),x=>1))
+```
+
+## A few things to understand about automatic differentiation
+
+1. It recompiles your code to do something slightly different, which means it needs to be Julia code in the Julia compiler (calling C or Python code will make this fail)
+2. Automatic differentiation does not necessarily work with the same number types, and so you need to be careful about the buffers that you create as they may need to be resized for the AD context
+3. It tends to be a lot more numerically stable than finite differencing, and thus it is not just a performance improvement but also an important improvement to accuracy (this is especially important to some solvers such as `Rodas5P`)
+
+These facts will become important in a second...
+
+## How is autodiff used in the solving process?
+
+To understand how and where automatic differentiation is used, 
+let's look at the implicit Euler discretization. We approximate
+$u(t_n)$ numerically as $u_{n}$ using the stepping process:
+
+$$
+u_{n+1} = u_n + hf(u_{n+1},p,t_n)
+$$
+
+Notice that $u_{n+1}$ is on both sides of the equation, so we define:
+
+$$
+g(u_{n+1}) = u_{n+1} - u_n + hf(u_{n+1},p,t_n)
+$$
+
+To find the solution for a step of implicit Euler, we need to find where $g(x) = 0$.
+
+## How is autodiff used in the solving process?
+
+In order to find the $x$ s.t. $g(x) = 0$, we use a Newton method:
+
+$$
+x_{n+1} = x_n - g'^{-1}(x_n) g(x_n)
+$$
+
+where $g'$ is the Jacobian of $g$, i.e. the matrix of derivatives 
+for every output w.r.t. every input. This is where the derivative 
+is used in the solver! 
+
+## Using Automatic Differentiation
+
+```{julia}
+using ForwardDiff
+
+function rober!(du, u, p, t)
+    y₁, y₂, y₃ = u
+    k₁, k₂, k₃ = p
+    du[1] = -k₁ * y₁ + k₃ * y₂ * y₃
+    du[2] = k₁ * y₁ - k₂ * y₂^2 - k₃ * y₂ * y₃
+    du[3] = k₂ * y₂^2
+    nothing
+end
+
+u0 = [1.0, 0.0, 0.0]
+du = copy(u0)
+p = [0.04, 3e7, 1e4]
+_t = 0.0
+```
+
+## Using Automatic Differentiation
+
+Uhh?
+
+```{julia}
+ForwardDiff.jacobian((x)->(rober!(du,x,p,t); du), u0)
+```
+
+## Using Automatic Differentiation
+
+You have to be careful about types! `du` is only 3 64-bit values so
+it cannot hold the 2x64-bit dual numbers used in AD!
+
+```{julia}
+ForwardDiff.jacobian(u0) do x
+    dx = copy(x)
+    rober!(dx,x,p,t)
+    dx
+end
+```
+
+## Using Automatic Differentiation in DiffEq
+
+Easy.
+
+```{julia}
+prob = DE.ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), [0.04, 3e7, 1e4])
+sol = DE.solve(prob, DE.Rodas5P())
+Plots.plot(sol, tspan = (1e-2, 1e5), xscale = :log10)
+```
+
+## Using Automatic Differentiation in DiffEq
+
+It's actually harder to turn it off.
+
+
+```{julia}
+import ADTypes
+sol = DE.solve(prob, DE.Rodas5P(autodiff = ADTypes.AutoFiniteDiff()))
+```
+
+For more information on choices and methods, see the ADTypes.jl documentation
+and DifferentiationInterface.jl. OrdinaryDiffEq.jl uses DifferentiationInterface.jl
+internally.
+
+## If it's automatic, why care?
+
+```{julia}
+import LinearAlgebra as LA
+
+A = rand(3,3) ./ 100
+function rober!(du, u, p, t)
+    y₁, y₂, y₃ = u
+    k₁, k₂, k₃, A, cache = p
+    LA.mul!(cache, A, u)
+    du[1] = -k₁ * y₁ + k₃ * y₂ * y₃ - cache[1]
+    du[2] = k₁ * y₁ - k₂ * y₂^2 - k₃ * y₂ * y₃  - cache[2]
+    du[3] = k₂ * y₂^2  - cache[3]
+    nothing
+end
+cache = zeros(3)
+prob = DE.ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), (0.04, 3e7, 1e4, A, cache))
+sol = DE.solve(prob, DE.Rodas5P())
+```
+
+## Easy answer to autodiff issues: just move to finite diff
+
+Small performance and robustness loss, but if it works it works
+
+```{julia}
+fsol = DE.solve(prob, DE.Rodas5P(autodiff=ADTypes.AutoFiniteDiff()))
+```
+
+## More involved answer: PreallocationTools.jl
+
+The issue is that `cache` is only 3 64-bit numbers, and so it needs to
+change when in the context of autodiff. PreallocationTools.jl is a package
+that helps make this process easier.
+
+```{julia}
+import PreallocationTools as PT
+cache = PT.DiffCache(zeros(3))
+
+function rober!(du, u, p, t)
+    y₁, y₂, y₃ = u
+    k₁, k₂, k₃, A, _cache = p
+    cache = PT.get_tmp(_cache, du)
+    LA.mul!(cache, A, u)
+    du[1] = -k₁ * y₁ + k₃ * y₂ * y₃ - cache[1]
+    du[2] = k₁ * y₁ - k₂ * y₂^2 - k₃ * y₂ * y₃  - cache[2]
+    du[3] = k₂ * y₂^2  - cache[3]
+    nothing
+end
+
+prob = DE.ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), (0.04, 3e7, 1e4, A, cache))
+sol = DE.solve(prob, DE.Rodas5P())
+```
+
+## Automatic Differentiation use case 2: Differentiating Solvers
+
+That covers how it's used in the solvers. But the other use case is on the solver. The use case is if you need the derivative:
+
+$$
+\frac{\partial u(t)}{\partial dp}
+$$
+
+i.e. you want to know how the solution changes if you change parameters. This is used in applications like parameter estimation, optimal control, and beyond.
+
+## Easy Answer: DifferentialEquations.jl is compatible with AD
+
+AD differentiates Julia code, DiffEq.jl is Julia code.
+
+```{julia}
+function rober!(du, u, p, t)
+    y₁, y₂, y₃ = u
+    k₁, k₂, k₃ = p
+    du[1] = -k₁ * y₁ + k₃ * y₂ * y₃
+    du[2] = k₁ * y₁ - k₂ * y₂^2 - k₃ * y₂ * y₃
+    du[3] = k₂ * y₂^2
+    nothing
+end
+
+function solve_with_p(p)
+    prob = DE.ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), p)
+    sol = DE.solve(prob, DE.Rodas5P(), saveat=50.0)
+    Array(sol)
+end
+
+solve_with_p([0.04, 3e7, 1e4])
+```
+
+## Easy Answer: DifferentialEquations.jl is compatible with AD
+
+QED.
+
+```{julia}
+ForwardDiff.jacobian(solve_with_p, [0.04, 3e7, 1e4])
+```
+
+## Complications
+
+ForwardDiff is forward-mode automatic differentiation. This is only efficient when the number of inputs is much equal to, or larger than, the number of outputs. Or if the equation is "sufficiently small". A good rule of thumb is:
+
+```
+number of parameters + number of equations < 100 => forward-mode
+anything else? => reverse-mode
+```
+
+To use reverse-mode, we need to switch what we're doing.
+
+## Reverse-Mode AD of Solver
+
+Note you need to `import SciMLSensitivity` for the adjoint system, even if
+its functions are not directly used. If it's not imported then you will get
+an error instructing you to import it!
+
+```{julia}
+import Zygote, SciMLSensitivity
+Zygote.jacobian(solve_with_p, [0.04, 3e7, 1e4])
+```
+
+SciMLSensitivity.jl has tons of options, we'd recommend that even intermediate users
+only use the default method like this.
+
 <!-- Local Variables: -->
 <!-- mode: markdown -->
 <!-- End: -->

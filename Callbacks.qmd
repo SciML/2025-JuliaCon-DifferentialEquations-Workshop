@@ -1,4 +1,309 @@
-# Callbacks
+# Handling Discontinuous Behavior with Callbacks
+
+Discontinuities the right way.
+
+## First of all, what is a callback? By demonstration
+
+Let's create an exponential decay problem. This is a model
+of a drug concentration in your body after you took a pill.
+
+```{julia}
+import DifferentialEquations as DE
+function f(du, u, p, t)
+    du[1] = -p*u[1]
+end
+u0 = [10.0]
+p = 1.0
+prob = DE.ODEProblem(f, u0, (0.0, 10.0), p)
+sol = DE.solve(prob, DE.Tsit5())
+import Plots;
+Plots.plot(sol)
+```
+
+## Setup an intervention
+
+Now let's add to the simulation that you get an injection of this
+drug at time $t=4$.
+
+```{julia}
+condition(u, t, integrator) = t == 4
+affect!(integrator) = integrator.u[1] += 10
+cb = DE.DiscreteCallback(condition, affect!)
+```
+
+Nothing happened?
+
+```{julia}
+sol = DE.solve(prob, DE.Tsit5(), callback = cb)
+Plots.plot(sol)
+```
+
+## Setup an intervention: needs tstops
+
+```{julia}
+sol = DE.solve(prob, DE.Tsit5(), callback = cb, tstops = [4.0])
+Plots.plot(sol)
+```
+
+## Multiple doses
+
+```{julia}
+dosetimes = [4.0, 8.0]
+condition(u, t, integrator) = t ∈ dosetimes
+affect!(integrator) = integrator.u[1] += 10
+cb = DE.DiscreteCallback(condition, affect!)
+sol = DE.solve(prob, DE.Tsit5(), callback = cb, tstops = dosetimes)
+Plots.plot(sol)
+```
+
+## PresetTimeCallback
+
+PresetTimeCallback automates the setting of tstops:
+
+```{julia}
+dosetimes = [4.0, 8.0]
+affect!(integrator) = integrator.u[1] += 10
+cb = DE.PresetTimeCallback(dosetimes, affect!)
+sol = DE.solve(prob, DE.Tsit5(), callback = cb)
+Plots.plot(sol)
+```
+
+## Implementing PresetTimeCallback: Initialization Phase
+
+Understanding how PresetTimeCallback can elucidate some information about callbacks:
+```{julia}
+function cb_init(c, u, t, integrator)
+    for tstop in dosetimes
+        DE.add_tstop!(integrator, tstop)
+    end
+end
+condition(u, t, integrator) = t ∈ dosetimes
+cb = DE.DiscreteCallback(condition, affect!, initialize = cb_init)
+sol = DE.solve(prob, DE.Tsit5(), callback = cb)
+Plots.plot(sol)
+```
+
+## Parameter Interventions
+
+We can also change other aspects of the system. Let's change the decay parameter
+into a positive number to model that the dose does not come all at once:
+
+```{julia}
+dosetimes = [4.0, 5.0, 8.0, 9.0]
+function cb_init(c, u, t, integrator)
+    for tstop in dosetimes
+        DE.add_tstop!(integrator, tstop)
+    end
+end
+condition(u, t, integrator) = t ∈ dosetimes
+function affect!(integrator)
+    if integrator.t in [4.0,8.0]
+        integrator.p = -2.0
+    else
+        integrator.p = 1.0
+    end
+end
+cb = DE.DiscreteCallback(condition, affect!, initialize = cb_init)
+sol = DE.solve(prob, DE.Tsit5(), callback = cb)
+Plots.plot(sol)
+```
+
+## What is the integrator all about?
+
+See the documentation of the integrator interface to find all of the
+functions you can do on the integrator.
+
+## Using DiscreteCallbacks for Logging
+
+```{julia}
+condition(u, t, integrator) = true
+affect!(integrator) = @show integrator.t
+cb = DE.DiscreteCallback(condition, affect!)
+sol = DE.solve(prob, DE.Tsit5(), callback = cb)
+Plots.plot(sol)
+```
+
+## Implicitly Defined Event Times: ContinuousCallback
+
+DiscreteCallback works if we know the time points where we want to intervene,
+but what if those time points are defined implicitly? Let's look at the bouncing
+ball. The model is simple: $x'' = -g$, i.e. the ball is accelerating downwards.
+We turn the second order ODE into two first order ODEs: $x' = v$, $v' = -g$.
+
+```{julia}
+function f(du, u, p, t)
+    du[1] = u[2]
+    du[2] = -p
+end
+u0 = [50.0, 0.0]
+tspan = (0.0, 4.0)
+p = 9.8
+prob = DE.ODEProblem(f, u0, tspan, p)
+sol = DE.solve(prob, DE.Tsit5())
+import Plots;
+Plots.plot(sol)
+```
+
+## Implicitly Defined Event Times: ContinuousCallback
+
+To stop the ball from going into the floor, we will tell it that when `u[1] = 0`, we should flip the velocity. ContinuousCallbacks work by having the `condition` be a rootfinding function, i.e. gives an event when `condition(u(t), t) = 0`
+
+```{julia}
+function condition(u, t, integrator) # Event when condition(u,t,integrator) == 0
+    u[1]
+end
+function affect!(integrator)
+    integrator.u[2] = -integrator.u[2]
+end
+cb = DE.ContinuousCallback(condition, affect!)
+sol = DE.solve(prob, DE.Tsit5(), callback = cb)
+Plots.plot(sol)
+```
+
+## Implicitly Defined Event Times: ContinuousCallback
+
+```{julia}
+tspan = (0.0, 15.0)
+prob = DE.ODEProblem(f, u0, tspan, p)
+sol = DE.solve(prob, DE.Tsit5(), callback = cb)
+Plots.plot(sol)
+```
+
+## Add Some Friction
+
+Instead of just flipping the velocity, let's add some friction:
+
+```{julia}
+function condition(u, t, integrator) # Event when condition(u,t,integrator) == 0
+    u[1]
+end
+function affect!(integrator)
+    integrator.u[2] = -integrator.u[2]/2
+end
+cb = DE.ContinuousCallback(condition, affect!)
+sol = DE.solve(prob, DE.Tsit5(), callback = cb)
+Plots.plot(sol)
+```
+
+## Handling the Accumulation Point
+
+The issue is that the rootfinding cannot be 100% accurate, so we need to help it.
+If we get to a low enough velocity, we'll simply make the ball stick to the floor.
+To do this, we'll have a parameter `p[1]` that we will have be 1.0 and multiply the
+velocity, but after sticking this value is `0.0`. Then when it's stuck, we will make
+the values be exactly 0.0. This looks like:
+
+```{julia}
+function dynamics!(du, u, p, t)
+    du[1] = u[2]
+    du[2] = p[1] * -9.8
+end
+function floor_aff!(integ)
+    integ.u[2] *= -0.5
+    if integ.dt > 1e-12
+        DE.set_proposed_dt!(integ, (integ.t - integ.tprev) / 100)
+    else
+        integ.u[1] = 0
+        integ.u[2] = 0
+        integ.p[1] = 0
+    end
+    integ.p[2] += 1
+    integ.p[3] = integ.t
+end
+floor_event = DE.ContinuousCallback(condition, floor_aff!)
+u0 = [1.0, 0.0]
+p = [1.0, 0.0, 0.0]
+prob = DE.ODEProblem{true}(dynamics!, u0, (0.0, 2.0), p)
+sol = DE.solve(prob, DE.Tsit5(), callback = floor_event)
+Plots.plot(sol, idxs=1)
+```
+
+## Terminating Integrations
+
+We can also dynamically choose where to terminate integrations using `DE.terminate!`.
+Let's now terminate the integration when it's stuck to the floor:
+
+```{julia}
+function floor_aff!(integ)
+    integ.u[2] *= -0.5
+    if integ.dt > 1e-12
+        DE.set_proposed_dt!(integ, (integ.t - integ.tprev) / 100)
+    else
+        integ.u[1] = 0
+        integ.u[2] = 0
+        integ.p[1] = 0
+        DE.terminate!(integ)
+    end
+    integ.p[2] += 1
+    integ.p[3] = integ.t
+end
+floor_event = DE.ContinuousCallback(condition, floor_aff!)
+u0 = [1.0, 0.0]
+p = [1.0, 0.0, 0.0]
+prob = DE.ODEProblem{true}(dynamics!, u0, (0.0, 2.0), p)
+sol = DE.solve(prob, DE.Tsit5(), callback = floor_event)
+Plots.plot(sol, idxs=1)
+```
+
+```{julia}
+stuck_time = sol.t[end]
+```
+
+## Multiple Walls: VectorContinuousCallback
+
+Sometimes you may want to track multiple simultanious continuous conditions.
+For example, let's model the ball in a room, where there are two vertical walls
+along with the floor. We will want to bounce the ball if it hits any of the
+walls or the floor. We do this via `VectorContinuousCallback`. It's almost the
+same as `ContinuousCallback` except that it allows for a vector of conditions
+where an event triggers at the first condition to be equal to zero.
+
+Let's start by setting up the model. Now we have $x'' = -g$ and $y'' = 0$ leading
+to the system of equations:
+
+```{julia}
+function f(du, u, p, t)
+    du[1] = u[2]
+    du[2] = -p
+    du[3] = u[4]
+    du[4] = 0.0
+end
+```
+
+where `u[1]` denotes `y`-coordinate, `u[2]` denotes velocity in `y`-direction, `u[3]` denotes `x`-coordinate and `u[4]` denotes velocity in `x`-direction. We will make a `VectorContinuousCallback` of length 2 - one for `x` axis collision, one for walls parallel to `y` axis.
+
+## Multiple Walls: VectorContinuousCallback
+
+Now let's use the function `(u[3] - 10.0)u[3]` to denote hitting vertical walls,
+since it's zero if either `u[3] == 0.0` or `u[3] == 10.0`.
+
+```{julia}
+function condition(out, u, t, integrator)
+    out[1] = u[1]
+    out[2] = (u[3] - 10.0)u[3]
+end
+
+function affect!(integrator, idx)
+    if idx == 1
+        integrator.u[2] = -0.9integrator.u[2]
+    elseif idx == 2
+        integrator.u[4] = -0.9integrator.u[4]
+    end
+end
+import DifferentialEquations as DE
+cb = DE.VectorContinuousCallback(condition, affect!, 2)
+```
+
+## Multiple Walls: VectorContinuousCallback
+
+```{julia}
+u0 = [50.0, 0.0, 0.0, 2.0]
+tspan = (0.0, 15.0)
+p = 9.8
+prob = DE.ODEProblem(f, u0, tspan, p)
+sol = DE.solve(prob, DE.Tsit5(), callback = cb, dt = 1e-3, adaptive = false)
+Plots.plot(sol, idxs = (3, 1))
+```
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->

@@ -6,6 +6,7 @@
     * It is assumed you know what ODEs are and what they are useful for
     * We will not cover SDEs, DDEs, jump processes, etc., it's just ODEs
 * We assume that you know a good amount of Julia
+* This is for intermediates, not for experts (but that would be a fun workshop to give if folks are interested)
 
 For a more beginner version, see on Youtube:
 
@@ -47,6 +48,22 @@ $$
 
 ## Defining and solving an ODE
 
+We will use the common notation. The ODE is defined as:
+
+$$
+u' = f(u,p,t)
+$$
+
+where $u$ is the state vector, $p$ are the parameters, and $t$ is the
+independent variable. In this workshop we will only be looking at initial
+value problems, i.e. problems for which $u_0 = u(t_0)$ is given. 
+
+For cases where that is not true, see the Boundary Value Problem solvers
+(BoundaryValueDiffEq.jl, `BVProblem`) which will have its own JuliaCon
+talk
+
+## Defining and solving an ODE
+
 ```{julia}
 import DifferentialEquations as DE
 
@@ -59,7 +76,7 @@ function lorenz!(du, u, p, t)
 end
 
 u0 = [1.0, 0.0, 0.0]
-tspan = (0.0, 1.0)
+tspan = (0.0, 100.0)
 p = [10.0, 28.0, 8 / 3]
 prob = DE.ODEProblem(lorenz!, u0, tspan, p)
 ```
@@ -125,42 +142,42 @@ sol = DE.solve(prob, DE.Vern9())
 ## What Solvers Are There?
 
 ```
-  OrdinaryDiffEq.jl Solvers: 299
+OrdinaryDiffEq.jl Solvers: 299
 
-  | Category                | Count |
-  |-------------------------|-------|
-  | Adams-Bashforth-Moulton | 13    |
-  | BDF Methods             | 18    |
-  | Explicit RK             | 1     |
-  | Exponential RK          | 17    |
-  | Extrapolation           | 7     |
-  | Feagin                  | 3     |
-  | FIRK                    | 4     |
-  | Function Map            | 1     |
-  | High Order RK           | 4     |
-  | IMEX Multistep          | 2     |
-  | Linear/Magnus           | 16    |
-  | Low Order RK            | 26    |
-  | Low Storage RK          | 45    |
-  | Nordsieck               | 4     |
-  | PDIRK                   | 1     |
-  | PRK                     | 1     |
-  | QPRK                    | 1     |
-  | RKN (Nyström)           | 17    |
-  | Rosenbrock              | 37    |
-  | SDIRK                   | 29    |
-  | SSPRK                   | 13    |
-  | Stabilized IRK          | 1     |
-  | Stabilized RK           | 6     |
-  | Symplectic RK           | 18    |
-  | Taylor Series           | 2     |
-  | Tsit5                   | 1     |
-  | Verner                  | 4     |
-  | Core/Other              | 7     |
+| Category                | Count |
+|-------------------------|-------|
+| Adams-Bashforth-Moulton | 13    |
+| BDF Methods             | 18    |
+| Explicit RK             | 1     |
+| Exponential RK          | 17    |
+| Extrapolation           | 7     |
+| Feagin                  | 3     |
+| FIRK                    | 4     |
+| Function Map            | 1     |
+| High Order RK           | 4     |
+| IMEX Multistep          | 2     |
+| Linear/Magnus           | 16    |
+| Low Order RK            | 26    |
+| Low Storage RK          | 45    |
+| Nordsieck               | 4     |
+| PDIRK                   | 1     |
+| PRK                     | 1     |
+| QPRK                    | 1     |
+| RKN (Nyström)           | 17    |
+| Rosenbrock              | 37    |
+| SDIRK                   | 29    |
+| SSPRK                   | 13    |
+| Stabilized IRK          | 1     |
+| Stabilized RK           | 6     |
+| Symplectic RK           | 18    |
+| Taylor Series           | 2     |
+| Tsit5                   | 1     |
+| Verner                  | 4     |
+| Core/Other              | 7     |
 
-  DiffEqDevTools.jl ODE Tableaus: 105
+DiffEqDevTools.jl ODE Tableaus: 105
 
-  Total: 404
+Total: 404
 ```
 
 ## What Solvers Are There?
@@ -180,9 +197,79 @@ There are many different packages to be aware of which all use the same API:
     * `OrdinaryDiffEqVerner`: The `VernX` high efficiency non-stiff methods
     * `OrdinaryDiffEqRosenbrock`: The Rosenbrock methods, i.e. `Rosenbrock23` and `Rodas5P`, for small stiff systems
     * `OrdinaryDiffEqBDF`: The BDF methods, `QNDF` and `FBDF`, for large stiff systems
+    * `OrdinaryDiffEqDefault`: The default solver for automatic choice
 * Sundials.jl: Wrapper for SUNDIALS `CVODE` and `IDA`. Can be efficient for large stiff systems
 * LSODA.jl: Wrapper for the classic `lsoda`, tends to be generally good for small systems
 * ODEInterfaceDiffEq.jl: Wrappers for classic Fortran ODE solvers, including `dopri5` and `radau`
+
+## Stiff Equations
+
+One major class of equations to know about are stiff equations. While difficult to
+define rigorously, there are two simple way to think about them:
+
+1. If your problem has multiple time scales (6+ orders of magnitude apart), then it's stiff. Look for parameter values that are very different.
+2. If solvers for non-stiff equations are taking lots of steps, it's stiff.
+
+This is a very common numerical difficulty, and when identified these problems require
+different sets of solvers
+
+## Stiff Equation Example: ROBER
+
+```{julia}
+function rober!(du, u, p, t)
+    y₁, y₂, y₃ = u
+    k₁, k₂, k₃ = p
+    du[1] = -k₁ * y₁ + k₃ * y₂ * y₃
+    du[2] = k₁ * y₁ - k₂ * y₂^2 - k₃ * y₂ * y₃
+    du[3] = k₂ * y₂^2
+    nothing
+end
+
+prob = DE.ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), [0.04, 3e7, 1e4])
+sol = DE.solve(prob, DE.Rodas5P())
+Plots.plot(sol, tspan = (1e-6, 1e5))
+```
+
+## Stiff Equation Example: ROBER
+
+```{julia}
+Plots.plot(sol, tspan = (1e-6, 1e5), xscale = :log10, yscale=:log10)
+```
+
+## Some special solvers you should be aware of
+
+* `ROCK2`: An explicit method that is efficient for stiff equations which are dominated by real eigenvalues
+* SSP methods: Methods which enforce certain properties (total variation, maximum norm, entropy) if dt is sufficiently small. This can be required for stability with some partial differential equations (hyperbolic equations)
+* low-memory RK methods: These methods require less RAM than other methods, at the cost of being less computationally efficient. Good for very large PDE discretizations
+
+## Faster Loading Times / Decreased Depedendency Usage
+
+```{julia}
+import OrdinaryDiffEqTsit5 as ODE5
+
+function lorenz!(du, u, p, t)
+    x, y, z = u
+    σ, ρ, β = p
+    du[1] = dx = σ * (y - x)
+    du[2] = dy = x * (ρ - z) - y
+    du[3] = dz = x * y - β * z
+end
+
+u0 = [1.0, 0.0, 0.0]
+tspan = (0.0, 100.0)
+p = [10.0, 28.0, 8 / 3]
+prob = ODE5.ODEProblem(lorenz!, u0, tspan, p)
+sol = ODE5.solve(prob, ODE5.Tsit5())
+Plots.plot(sol, idxs=(1,2,3))
+```
+
+## SplitODEProblem
+
+## Other forms: DyanmicalODEProblem
+
+## Linear Specialized Methods
+
+## Mass Matrices and Differential-Algebraic Equations (DAEs)
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->
