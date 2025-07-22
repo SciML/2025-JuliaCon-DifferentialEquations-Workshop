@@ -150,44 +150,26 @@ sol = DE.solve(prob, DE.Vern9())
 
 ## What Solvers Are There?
 
-```
 OrdinaryDiffEq.jl Solvers: 299
-
-| Category                | Count |
-|-------------------------|-------|
-| Adams-Bashforth-Moulton | 13    |
-| BDF Methods             | 18    |
-| Explicit RK             | 1     |
-| Exponential RK          | 17    |
-| Extrapolation           | 7     |
-| Feagin                  | 3     |
-| FIRK                    | 4     |
-| Function Map            | 1     |
-| High Order RK           | 4     |
-| IMEX Multistep          | 2     |
-| Linear/Magnus           | 16    |
-| Low Order RK            | 26    |
-| Low Storage RK          | 45    |
-| Nordsieck               | 4     |
-| PDIRK                   | 1     |
-| PRK                     | 1     |
-| QPRK                    | 1     |
-| RKN (Nyström)           | 17    |
-| Rosenbrock              | 37    |
-| SDIRK                   | 29    |
-| SSPRK                   | 13    |
-| Stabilized IRK          | 1     |
-| Stabilized RK           | 6     |
-| Symplectic RK           | 18    |
-| Taylor Series           | 2     |
-| Tsit5                   | 1     |
-| Verner                  | 4     |
-| Core/Other              | 7     |
 
 DiffEqDevTools.jl ODE Tableaus: 105
 
 Total: 404
-```
+
+## What Solvers Are There?
+
+| Category                | Count | Category            | Count | Category        | Count |
+|-------------------------|-------|---------------------|-------|-----------------|-------|
+| Adams-Bashforth-Moulton | 13    | IMEX Multistep      | 2     | Rosenbrock      | 37    |
+| BDF Methods             | 18    | Linear/Magnus       | 16    | SDIRK           | 29    |
+| Explicit RK             | 1     | Low Order RK        | 26    | SSPRK           | 13    |
+| Exponential RK          | 17    | Low Storage RK      | 45    | Stabilized IRK  | 1     |
+| Extrapolation           | 7     | Nordsieck           | 4     | Stabilized RK   | 6     |
+| Feagin                  | 3     | PDIRK               | 1     | Symplectic RK   | 18    |
+| FIRK                    | 4     | PRK                 | 1     | Taylor Series   | 2     |
+| Function Map            | 1     | QPRK                | 1     | Tsit5           | 1     |
+| High Order RK           | 4     | RKN (Nyström)       | 17    | Verner          | 4     |
+|                         |       |                     |       | Core/Other      | 7     |
 
 ## What Solvers Are There?
 
@@ -205,8 +187,14 @@ There are many different packages to be aware of which all use the same API:
     * `OrdinaryDiffEqTsit5`: Just the non-stiff 5th order adaptive Tsit5 method
     * `OrdinaryDiffEqVerner`: The `VernX` high efficiency non-stiff methods
     * `OrdinaryDiffEqRosenbrock`: The Rosenbrock methods, i.e. `Rosenbrock23` and `Rodas5P`, for small stiff systems
-    * `OrdinaryDiffEqBDF`: The BDF methods, `QNDF` and `FBDF`, for large stiff systems
-    * `OrdinaryDiffEqDefault`: The default solver for automatic choice
+
+## What Solver Packages Are There?
+
+* `OrdinaryDiffEqBDF`: The BDF methods, `QNDF` and `FBDF`, for large stiff systems
+* `OrdinaryDiffEqDefault`: The default solver for automatic choice
+
+## What Solver Packages Are There?
+
 * Sundials.jl: Wrapper for SUNDIALS `CVODE` and `IDA`. Can be efficient for large stiff systems
 * LSODA.jl: Wrapper for the classic `lsoda`, tends to be generally good for small systems
 * ODEInterfaceDiffEq.jl: Wrappers for classic Fortran ODE solvers, including `dopri5` and `radau`
@@ -257,6 +245,8 @@ Plots.plot(sol, tspan = (1e-6, 1e5), xscale = :log10, yscale=:log10)
 
 DifferentialEquations.jl loads a full set of solvers, but if you know exactly the
 solver that you want, you can simply load the subpackage with that solver!
+
+## Faster Loading Times / Decreased Depedendency Usage
 
 ```{julia}
 #| echo: true
@@ -312,6 +302,8 @@ $f(u,p,t)=Au$. When this occurs, ODE solvers can specialize on being able to sol
 that part exactly via the matrix exponential $exp(At)v$, and thus we can use
 speical integrators known as Exponential Runge-Kutta Methods. These can be fast
 for PDE discretizations that tend of have this form.
+
+## Special Case: Semilinear ODE Problem
 
 ```{julia}
 #| echo: true
@@ -374,8 +366,7 @@ tspan = (0,100.)
 prob = DynamicalODEProblem(pdot, qdot, initial_velocity, initial_position, tspan)
 sol = solve(prob, KahanLi6(), dt=1//10);
 ```
-
-## Symplectic Integrator Long Time Solution
+## Plot Utilities
 
 ```{julia}
 #| echo: true
@@ -386,10 +377,16 @@ function plot_first_integrals(sol, H, L)
     plot!(initial_first_integrals[2].-map(u->L(u.x[2], u.x[1]), sol.u), lab="Angular momentum variation")
 end
 analysis_plot(sol, H, L) = plot(plot_orbit(sol), plot_first_integrals(sol, H, L))
+```
+
+## Symplectic Solution
+
+```{julia}
+#| echo: true
 analysis_plot(sol, H, L)
 ```
 
-## Normal Integrator Long Time Solution
+## Normal Solution
 
 ```{julia}
 #| echo: true
@@ -424,6 +421,8 @@ $$
 \end{aligned}
 $$
 
+## DAE via Mass Matrix Example
+
 Let's write this in mass matrix form:
 
 $$
@@ -443,6 +442,8 @@ y_{1} + y_{2} + y_{3} - 1
 \end{bmatrix} 
 \end{align}
 $$
+
+## DAE via Mass Matrix Example
 
 If you do the matrix-vector multiplication out, you see that last row of zeros simply gives that the last equation is $0 = y_{1} + y_{2} + y_{3} - 1$. Once you see that trick, it's immediately clear how mass matrices can write out any constraint equation $g$. Done.
 
@@ -465,6 +466,13 @@ mmf = DE.ODEFunction(rober, mass_matrix = M)
 prob_mm = DE.ODEProblem(mmf, [1.0, 0.0, 0.0], (0.0, 1e5), (0.04, 3e7, 1e4))
 sol = DE.solve(prob_mm, DE.Rodas5(), reltol = 1e-8, abstol = 1e-8)
 
+Plots.plot(sol, xscale = :log10, tspan = (1e-6, 1e5), layout = (3, 1))
+```
+
+## DAE via Mass Matrix Example
+
+```{julia}
+#| echo: true
 Plots.plot(sol, xscale = :log10, tspan = (1e-6, 1e5), layout = (3, 1))
 ```
 
