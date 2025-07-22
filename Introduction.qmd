@@ -133,6 +133,7 @@ sol = DE.solve(prob; saveat = 1.0)
 ```
 
 ```{julia}
+#| echo: true
 sol = DE.solve(prob; saveat = [1.0,5.0,100.0])
 ```
 

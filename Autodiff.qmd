@@ -39,7 +39,7 @@ Symbolics.derivative(sin(f(x)),x)
 
 ```{julia}
 #| echo: true
-function f(x)
+function f2(x)
     out = x
     for i in 1:5
         # sin(out) => chain rule sin' = cos
@@ -56,14 +56,14 @@ function outer(x)
 end
 dsinfx(x) = outer((x,1))[2]
 
-f((1,1))
+f2((1,1))
 ```
 
 ## Validation
 
 ```{julia}
 #| echo: true
-f((1,1))
+f2((1,1))
 ```
 
 ```{julia}
@@ -148,7 +148,7 @@ it cannot hold the 2x64-bit dual numbers used in AD!
 #| echo: true
 ForwardDiff.jacobian(u0) do x
     dx = copy(x)
-    rober!(dx,x,p,t)
+    rober!(dx,x,p,_t)
     dx
 end
 ```
@@ -158,6 +158,8 @@ end
 Easy.
 
 ```{julia}
+import DifferentialEquations as DE
+import Plots
 prob = DE.ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), [0.04, 3e7, 1e4])
 sol = DE.solve(prob, DE.Rodas5P())
 Plots.plot(sol, tspan = (1e-2, 1e5), xscale = :log10)
