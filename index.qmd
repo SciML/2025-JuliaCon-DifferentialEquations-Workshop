@@ -24,12 +24,9 @@ date: 2025-07-22
 engine: julia
 ---
 
-{{< include Introduction.qmd >}}
-#{{< include FastCode.qmd >}}
-#{{< include Autodiff.qmd >}}
-#{{< include PDEs.qmd >}}
-#{{< include GPUs.qmd >}}
-#{{< include Callbacks.qmd >}}
+{{< include FastCode.qmd >}}
+{{< include PDEs.qmd >}}
+{{< include GPUs.qmd >}}
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->

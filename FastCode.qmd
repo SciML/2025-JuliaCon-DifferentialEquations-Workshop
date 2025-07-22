@@ -59,6 +59,7 @@ A, b, v = rand(10000,10000), rand(10000), rand(10000)
 ```{julia}
 #| echo: true
 #| output: false
+using OrdinaryDiffEq
 function rober_oop(u, p, t)
     y₁, y₂, y₃ = u
     k₁, k₂, k₃ = p
