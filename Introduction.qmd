@@ -295,8 +295,8 @@ $$
 ```{julia}
 #| echo: true
 u = rand(4, 2)
-f1 = (du, u, p, t) -> du .= 2u
-f2 = (du, u, p, t) -> du .= 2u
+f1(du, u, p, t) = du .= 2u
+f2(du, u, p, t) = du .= 2u
 prob = DE.SplitODEProblem(f1, f2, u, (0.0, 1.0))
 sol = DE.solve(prob, DE.KenCarp4());
 ```
