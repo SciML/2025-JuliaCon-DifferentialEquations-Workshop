@@ -9,19 +9,38 @@
 
 ---
 
-## GPU Performance profile
+## Within GPU paralellization
 
-* Lots of paralelism necessary
-* `Float64` is the enemy. Use `Float32` wherever possible
-* Minimize data transfer
-* Be careful with scalar indexing
+* Many staates (>1000)
+* Expensive `f`
+* fairly simple `f` (array based paralellism)
+
+
+---
+
+## Within GPU example
+
+```{julia}
+#| echo: true
+#| output: false
+
+using DiffEqGPU, OrdinaryDiffEq, CUDA
+function linear_ode(du, u, p, t)
+    mul!(du, p, u)
+end
+
+A = CUDA.rand(Float32, 1000, 1000)
+u0 = CUDA.rand(Float32, 1000)
+prob = ODEProblem(linear_ode, u0, (0f0, 100f0), A)
+solve(prob)
+```
 
 ---
 
 ## DiffEqGPU.jl
 
-* EnsembleGPUArray
-* EnsembleGPUKernel
+* `EnsembleGPUArray`
+* `EnsembleGPUKernel`
 
 ---
 
@@ -88,13 +107,12 @@ monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
 @time solve(monteprob, GPUTsit5(), EnsembleGPUKernel(CUDA.CUDABackend()),
     trajectories = 10_000, saveat = 1.0f0);
 ```
+
 ---
 
-## Within GPU paralellization
+## GPU Performance (Lorentz)
 
-* Many staates (>1000)
-* Expensive `f`
-* fairly simple `f` (array based paralellism)
+![GPU Performance](GPU_perf.png)
 
 ---
 
@@ -105,6 +123,15 @@ monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
 * Less solid (especially on non-Nvidia)
 
 
+---
+
+## GPU Performance profile
+
+* Lots of paralelism necessary
+* `Float64` is the enemy. Use `Float32` wherever possible
+* Minimize data transfer
+* Be careful with scalar indexing
+* Potentially must faster than CPUs
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->
