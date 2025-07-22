@@ -61,6 +61,7 @@ monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
 * Runs entire solver on the GPU
 * Faster
 * Slightly trickier to set up
+* Fewer supported solvers
 
 ```{julia}
 #| echo: true
@@ -87,6 +88,23 @@ monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
 @time solve(monteprob, GPUTsit5(), EnsembleGPUKernel(CUDA.CUDABackend()),
     trajectories = 10_000, saveat = 1.0f0);
 ```
+---
+
+## Within GPU paralellization
+
+* Many staates (>1000)
+* Expensive `f`
+* fairly simple `f` (array based paralellism)
+
+---
+
+## Downsides of GPUs
+
+* Function calls very slow
+* Branches can reduce throughput
+* Less solid (especially on non-Nvidia)
+
+
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->
