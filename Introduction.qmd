@@ -152,8 +152,6 @@ sol = DE.solve(prob, DE.Vern9())
 
 OrdinaryDiffEq.jl Solvers: 299
 
-DiffEqDevTools.jl ODE Tableaus: 105
-
 Total: 404
 
 ## What Solvers Are There?
@@ -266,56 +264,6 @@ p = [10.0, 28.0, 8 / 3]
 prob = ODE5.ODEProblem(lorenz!, u0, tspan, p)
 sol = ODE5.solve(prob, ODE5.Tsit5())
 Plots.plot(sol, idxs=(1,2,3))
-```
-
-## SplitODEProblem and IMEX methods
-
-Sometimes you may have one part of the problem operating at a much faster time
-scale than the other. In that case, you can split the problem and use a method
-for stiff equations on the fast part and a method for explicit integrators on
-the slow part. This is calls an implicit-explicit or IMEX integration. If we
-define:
-
-$$
-u' = f(u,p,t) + g(u,p,t)
-$$
-
-## Example Defining A SplitODEProblem
-
-```{julia}
-#| echo: true
-u = rand(4, 2)
-f1(du, u, p, t) = du .= 2u
-f2(du, u, p, t) = du .= 2u
-prob = DE.SplitODEProblem(f1, f2, u, (0.0, 1.0))
-sol = DE.solve(prob, DE.KenCarp4());
-```
-
-NOTE: SplitODEProblems can be solved by standard ODE solvers (by definition, just
-putting them back together) but this affords no performance advantage, it's simply
-a convenience.
-
-## Special Case: Semilinear ODE Problem
-
-There is a special case for a split ODE problem where $f(u,p,t)$ is linear, i.e.
-$f(u,p,t)=Au$. When this occurs, ODE solvers can specialize on being able to solve
-that part exactly via the matrix exponential $exp(At)v$, and thus we can use
-speical integrators known as Exponential Runge-Kutta Methods. These can be fast
-for PDE discretizations that tend of have this form.
-
-## Special Case: Semilinear ODE Problem
-
-```{julia}
-#| echo: true
-using OrdinaryDiffEqExponentialRK, SciMLOperators
-A = [2.0 -1.0; -1.0 2.0]
-linnonlin_f1 = MatrixOperator(A)
-linnonlin_f2 = (du, u, p, t) -> du .= 1.01 .* u
-linnonlin_fun_iip = SplitFunction(linnonlin_f1, linnonlin_f2)
-tspan = (0.0, 1.0)
-u0 = [0.1, 0.1]
-prob = SplitODEProblem(linnonlin_fun_iip, u0, tspan)
-sol = solve(prob, ETDRK4(), dt = 1 / 4)
 ```
 
 ## Linear Specialized Methods

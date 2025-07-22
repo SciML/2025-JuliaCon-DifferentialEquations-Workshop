@@ -8,6 +8,7 @@ author:
     affiliation: "JuliaHub, MIT"
 format:
   revealjs:
+    smaller: true
     code-copy: true
     code-line-numbers: false
     hash-type: number

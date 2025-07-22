@@ -11,7 +11,7 @@ Check out [github.com/JuliaPDE/SurveyofPDEPackages](URL github.com/JuliaPDE/Surv
 
 ## Finite Differences
 
-* DiffEqOperators.jl
+* SciMLOperators.jl
 * MethodOfLines.jl
 * ParallelStencil.jl
 * ImplicitGlobalGrid.jl
@@ -50,11 +50,7 @@ $$
 #| echo: true
 #| output: false
 function f(x,y,t)
-    if t < 1.1 || (x-0.3)^2+(y-0.6)^2 > 0.1^2 
-        return 0
-    else
-        return 5
-    end
+    ifelse(t < 1.1 || (x-0.3)^2+(y-0.6)^2 > 0.1^2 , 0, 5)
 end
 ```
 
@@ -184,6 +180,135 @@ end
     KenCarp47(linsolve = KrylovJL(), precs = incompletelu,
         concrete_jac = true));
 ```
+
+---
+
+## Preconditioner options
+Full list at https://docs.sciml.ai/LinearSolve/stable/basics/Preconditioners/#Curated-List-of-Pre-Defined-Preconditioners
+* `LinearSolve.ComposePreconditioner(p1, p2)` 
+* `LinearSolve.InvPreconditioner(p)`
+* `IncompleteLU.ilu`
+* `AlgebraicMultigrid.jl`
+* `PyAMG.jl`
+* `ILUZero.jl`
+
+---
+
+## SplitODEProblem and IMEX methods
+
+Sometimes you may have one part of the problem operating at a much faster time
+scale than the other. In that case, you can split the problem and use a method
+for stiff equations on the fast part and a method for explicit integrators on
+the slow part. This is calls an implicit-explicit or IMEX integration. If we
+define:
+
+$$
+u' = f(u,p,t) + g(u,p,t)
+$$
+
+## Example Defining A SplitODEProblem
+
+```{julia}
+#| echo: true
+u = rand(4, 2)
+f1(du, u, p, t) = du .= 2u
+f2(du, u, p, t) = du .= 2u
+prob = SplitODEProblem(f1, f2, u, (0.0, 1.0))
+sol = solve(prob, DE.KenCarp4());
+```
+
+NOTE: SplitODEProblems can be solved by standard ODE solvers (by definition, just
+putting them back together) but this affords no performance advantage, it's simply
+a convenience.
+
+## Special Case: Semilinear ODE Problem
+
+There is a special case for a split ODE problem where $f(u,p,t)$ is linear, i.e.
+$f(u,p,t)=Au$. When this occurs, ODE solvers can specialize on being able to solve
+that part exactly via the matrix exponential $exp(At)v$, and thus we can use
+speical integrators known as Exponential Runge-Kutta Methods. These can be fast
+for PDE discretizations that tend of have this form.
+
+```{julia}
+#| echo: true
+using OrdinaryDiffEqExponentialRK, SciMLOperators
+A = [2.0 -1.0; -1.0 2.0]
+linnonlin_f1 = MatrixOperator(A)
+linnonlin_f2 = (du, u, p, t) -> du .= 1.01 .* u
+linnonlin_fun_iip = SplitFunction(linnonlin_f1, linnonlin_f2)
+tspan = (0.0, 1.0)
+u0 = [0.1, 0.1]
+prob = SplitODEProblem(linnonlin_fun_iip, u0, tspan)
+sol = solve(prob, ETDRK4(), dt = 1 / 4)
+```
+
+## Linear Specialized Methods
+
+Similarly, if $u'=f$ is almost linear, there are specializations. 
+
+* For $u'=Au$, the analytical solution is $u(t) = exp(At)u_0$ which has fast solvers in ExponentialUtilities.jl. 
+* For $u'=A(t)u$, there are Magnus methods
+* For $u'=A(u)u$, there are Lie group methods
+
+By using matrix exponentials, these methods can have good conservation properties.
+
+## Example Magnus Method Solve
+
+```{julia}
+#| echo: true
+using OrdinaryDiffEqLinear, SciMLOperators
+function update_func(A, u, p, t)
+    A[1, 1] = 0
+    A[2, 1] = sin(t)
+    A[1, 2] = -1
+## SplitODEProblem and IMEX methods
+
+Sometimes you may have one part of the problem operating at a much faster time
+scale than the other. In that case, you can split the problem and use a method
+for stiff equations on the fast part and a method for explicit integrators on
+the slow part. This is calls an implicit-explicit or IMEX integration. If we
+define:
+
+$$
+u' = f(u,p,t) + g(u,p,t)
+$$
+
+## Example Defining A SplitODEProblem
+
+```{julia}
+#| echo: true
+u = rand(4, 2)
+f1(du, u, p, t) = du .= 2u
+f2(du, u, p, t) = du .= 2u
+prob = SplitODEProblem(f1, f2, u, (0.0, 1.0))
+sol = solve(prob, DE.KenCarp4());
+```
+
+NOTE: SplitODEProblems can be solved by standard ODE solvers (by definition, just
+putting them back together) but this affords no performance advantage, it's simply
+a convenience.
+
+## Special Case: Semilinear ODE Problem
+
+There is a special case for a split ODE problem where $f(u,p,t)$ is linear, i.e.
+$f(u,p,t)=Au$. When this occurs, ODE solvers can specialize on being able to solve
+that part exactly via the matrix exponential $exp(At)v$, and thus we can use
+speical integrators known as Exponential Runge-Kutta Methods. These can be fast
+for PDE discretizations that tend of have this form.
+
+```{julia}
+#| echo: true
+using OrdinaryDiffEqExponentialRK, SciMLOperators
+A = [2.0 -1.0; -1.0 2.0]
+linnonlin_f1 = MatrixOperator(A)
+linnonlin_f2 = (du, u, p, t) -> du .= 1.01 .* u
+linnonlin_fun_iip = SplitFunction(linnonlin_f1, linnonlin_f2)
+tspan = (0.0, 1.0)
+u0 = [0.1, 0.1]
+prob = SplitODEProblem(linnonlin_fun_iip, u0, tspan)
+sol = solve(prob, ETDRK4(), dt = 1 / 4)
+```
+
 <!-- Local Variables: -->
 <!-- mode: markdown -->
 <!-- End: -->

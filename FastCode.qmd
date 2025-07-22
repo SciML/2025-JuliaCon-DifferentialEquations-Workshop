@@ -77,6 +77,9 @@ function rober!(du, u, p, t)
 end
 ```
 
+---
+
+## Rober out of place timing
 ```{julia}
 #| echo: true
 #| output: false
