@@ -1,5 +1,5 @@
 ---
-title: "A Deep Dive Into `DifferentialEquations.jl`"
+title: "A Deep Dive Into `DifferentialEquations`"
 subtitle: "Everything about ODEs"
 author:
   - name: "Oscar Smith"
