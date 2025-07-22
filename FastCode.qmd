@@ -4,7 +4,8 @@
 
 ## Make sure your code is type stable.
 
-*`@code_warntype f(du, u, p, t)`
+* `@code_warntype f(du, u, p, t)`
+* Profile to find slow spots
 
 ---
 
@@ -28,6 +29,11 @@ v = rand(10000)
 @time @views v[2:end]
 ```
 
+```{julia}
+@time v[2:end]
+@time @views v[2:end]
+```
+
 ---
 
 ## Preallocate when possible
@@ -44,7 +50,7 @@ A, b, v = rand(10000,10000), rand(10000), rand(10000)
 
 ```{julia}
 @time b*v'
-@time mul!(A, b, v')
+@time mul!(A, b, v');
 ```
 
 ---
@@ -52,6 +58,7 @@ A, b, v = rand(10000,10000), rand(10000), rand(10000)
 ## Rober out of place
 ```{julia}
 #| echo: true
+#| output: false
 function rober_oop(u, p, t)
     y₁, y₂, y₃ = u
     k₁, k₂, k₃ = p
@@ -68,6 +75,16 @@ function rober!(du, u, p, t)
     du[3] = k₂ * y₂^2
     nothing
 end
+
+prob_oop = ODEProblem(rober_oop, [1.0, 0.0, 0.0], (0.0, 1e5), [0.04, 3e7, 1e4])
+prob! = ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), [0.04, 3e7, 1e4])
+@time solve(prob_oop)
+@time solve(prob!)
+```
+
+```{julia}
+@time solve(prob_oop)
+@time solve(prob!)
 ```
 
 ---
@@ -77,8 +94,16 @@ end
 
 ```{julia}
 #| echo: true
+#| output: false
+u1, u2 = rand(1000), rand(1000)
+@time [u1..., u2...]
+@time vcat(u1, u2)
 ```
 
+```{julia}
+@time [u1..., u2...]
+@time vcat(u1, u2)
+```
 
 ---
 
@@ -116,6 +141,8 @@ function rober!(du, u, p, t)
              k₂ * y₂^2.0]
 end
 ```
+
+---
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->

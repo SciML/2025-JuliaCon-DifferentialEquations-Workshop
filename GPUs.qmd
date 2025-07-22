@@ -11,7 +11,7 @@
 
 ## Within GPU paralellization
 
-* Many staates (>1000)
+* Many states (>1000)
 * Expensive `f`
 * fairly simple `f` (array based paralellism)
 
@@ -22,17 +22,16 @@
 
 ```{julia}
 #| echo: true
-#| output: false
 
 using DiffEqGPU, OrdinaryDiffEq, CUDA
 function linear_ode(du, u, p, t)
     mul!(du, p, u)
 end
 
-A = CUDA.rand(Float32, 1000, 1000)
+A = CUDA.randn(Float32, 1000, 1000) / 100
 u0 = CUDA.rand(Float32, 1000)
-prob = ODEProblem(linear_ode, u0, (0f0, 100f0), A)
-solve(prob)
+prob = ODEProblem(linear_ode, u0, (0f0, 10f0), A)
+solve(prob, Tsit5())
 ```
 
 ---
@@ -66,7 +65,8 @@ p = [10.0f0, 28.0f0, 8 / 3.0f0]
 prob = ODEProblem(lorenz, u0, tspan, p)
 prob_func = (prob, i, repeat) -> remake(prob, p = rand(Float32, 3) .* p)
 monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
-@time solve(monteprob, Tsit5(), EnsembleGPUArray(CUDA.CUDABackend()), trajectories = 10_000, saveat = 1.0f0);
+@time solve(monteprob, Tsit5(), EnsembleGPUArray(CUDA.CUDABackend()),
+            trajectories = 10_000, saveat = 1.0f0);
 ```
 
 ```{julia}
