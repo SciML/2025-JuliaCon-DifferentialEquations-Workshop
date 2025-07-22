@@ -1,4 +1,6 @@
-# JuliaCon 2025: A Deep Dive Into `DifferentialEquations.jl
+# JuliaCon 2025: A Deep Dive Into DifferentialEquations.jl
+
+[See the built version of the workshop notes!](https://sciml.github.io/2025-JuliaCon-DifferentialEquations-Workshop/)
 
 ## Rendering
 
