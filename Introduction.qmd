@@ -2,7 +2,7 @@
 
 ## Who this workshop is for
 
-* This workshop is for those who want to learn about the deep features of DifferentialEquations.jl for ODEs
+* This workshop is for those who want to learn about the deep features of DiffEq for ODEs
     * It is assumed you know what ODEs are and what they are useful for
     * We will not cover SDEs, DDEs, jump processes, etc., it's just ODEs
 * We assume that you know a good amount of Julia
@@ -14,23 +14,23 @@ For a more beginner version, see on Youtube:
 
 ## Note about coming changes
 
-There will soon be a new major release, DifferentialEquations.jl v8!
+There will soon be a new major release, DiffEq v8!
 
-* The major change will be that non-ODE dependencies will be removed from DifferentialEquations.jl
+* The major change will be that non-ODE dependencies will be removed from DiffEq
     * The documentation will still cover all types of differential equations
     * For things other than ODEs, you will be required to import the solver packages
         * SDEs: StochasticDiffEq.jl
         * DDEs: DelayDiffEq.jl
         * ...
     * The default solvers will be associated with those domain packages
-* Result: DifferentialEquations.jl will
+* Result: DiffEq will
     * have much fewer dependencies
     * be much faster to load 
     * be focused on ODEs
 
 With that in mind, let's start the show!
 
-# Introduction to DifferentialEquations.jl
+# Introduction to DiffEq
 
 Let's do a quick runthrough of the basics!
 
@@ -243,7 +243,7 @@ Plots.plot(sol, tspan = (1e-6, 1e5), xscale = :log10, yscale=:log10)
 
 ## Faster Loading Times / Decreased Depedendency Usage
 
-DifferentialEquations.jl loads a full set of solvers, but if you know exactly the
+DiffEq loads a full set of solvers, but if you know exactly the
 solver that you want, you can simply load the subpackage with that solver!
 
 ## Faster Loading Times / Decreased Depedendency Usage
@@ -396,7 +396,7 @@ analysis_plot(sol, H, L)
 
 ## Mass Matrices and Differential-Algebraic Equations (DAEs)
 
-Instead of just an ODE $u'=f(u,p,t)$, DifferentialEquations.jl can express mass
+Instead of just an ODE $u'=f(u,p,t)$, DiffEq can express mass
 matrix ODEs:
 
 $$

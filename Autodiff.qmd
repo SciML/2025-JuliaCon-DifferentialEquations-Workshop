@@ -1,15 +1,15 @@
-# Faster ODEs with Automatic Differentiation
+# Faster ODEs with Automatic Differentiation (AD)
 
 First a disambiguation...
 
-## Two ways that automatic differentiation is used
+## Two ways that AD is used
 
 1. For improving the solving process (particularly for implicit solvers)
 2. For calculating the derivative of the solution (w.r.t. parameters and initial conditions)
 
-## Quick Note: automatic differentiation is not symbolic or numerical differentiation
+## Quick Note: AD is not symbolic or numerical differentiation
 
-Automatic differentiation is a mix: it is a compiler-based method which changes a 
+AD is a mix: it is a compiler-based method which changes a 
 code into the code for computing the solution and its derivative simultaneously.
 
 ## Demonstration of symbolic forms of code
@@ -35,7 +35,7 @@ sin(f(x))
 Symbolics.derivative(sin(f(x)),x) 
 ```
 
-## Automatic Differentiation done by hand
+## AD done by hand
 
 ```{julia}
 #| echo: true
@@ -71,12 +71,12 @@ f2((1,1))
 (substitute(sin(f(x)),x=>1), substitute(Symbolics.derivative(sin(f(x)),x),x=>1))
 ```
 
-## A few things to understand about automatic differentiation
+## A few things to understand about AD
 
 1. It recompiles your code to do something slightly different, which means it needs to be Julia code in the Julia compiler (calling C or Python code will make this fail)
-2. Automatic differentiation does not necessarily work with the same number types, and so you need to be careful about the buffers that you create as they may need to be resized for the AD context
+2. AD does not necessarily work with the same number types, and so you need to be careful about the buffers that you create as they may need to be resized for the AD context
 
-## A few things to understand about automatic differentiation
+## A few things to understand about AD
 
 3. It tends to be a lot more numerically stable than finite differencing, and thus it is not just a performance improvement but also an important improvement to accuracy (this is especially important to some solvers such as `Rodas5P`)
 
@@ -84,7 +84,7 @@ These facts will become important in a second...
 
 ## How is autodiff used in the solving process?
 
-To understand how and where automatic differentiation is used, 
+To understand how and where AD is used, 
 let's look at the implicit Euler discretization. We approximate
 $u(t_n)$ numerically as $u_{n}$ using the stepping process:
 
@@ -112,7 +112,7 @@ where $g'$ is the Jacobian of $g$, i.e. the matrix of derivatives
 for every output w.r.t. every input. This is where the derivative 
 is used in the solver! 
 
-## Using Automatic Differentiation
+## Using AD
 
 ```{julia}
 #| echo: true
@@ -133,7 +133,7 @@ p = [0.04, 3e7, 1e4]
 _t = 0.0
 ```
 
-## Using Automatic Differentiation
+## Using AD
 
 Uhh?
 
@@ -161,7 +161,7 @@ Stacktrace:
 Some type information was truncated. Use `show(err)` to see complete types.
 ```
 
-## Using Automatic Differentiation
+## Using AD
 
 You have to be careful about types! `du` is only 3 64-bit values so
 it cannot hold the 2x64-bit dual numbers used in AD!
@@ -175,7 +175,7 @@ ForwardDiff.jacobian(u0) do x
 end
 ```
 
-## Using Automatic Differentiation in DiffEq
+## Using AD in DiffEq
 
 Easy.
 
@@ -188,14 +188,14 @@ sol = DE.solve(prob, DE.Rodas5P())
 Plots.plot(sol, tspan = (1e-2, 1e5), xscale = :log10)
 ```
 
-## Using Automatic Differentiation in DiffEq
+## Using AD in DiffEq
 
 ```{julia}
 #| echo: true
 Plots.plot(sol, tspan = (1e-2, 1e5), xscale = :log10)
 ```
 
-## Using Automatic Differentiation in DiffEq
+## Using AD in DiffEq
 
 It's actually harder to turn it off.
 
@@ -238,11 +238,11 @@ sol = DE.solve(prob, DE.Rodas5P())
 ```
 
 ```
-ERROR: First call to automatic differentiation for the Jacobian
+ERROR: First call to AD for the Jacobian
 failed. This means that the user `f` function is not compatible
-with automatic differentiation. Methods to fix this include:
+with AD. Methods to fix this include:
 
-1. Turn off automatic differentiation (e.g. Rosenbrock23() becomes
+1. Turn off AD (e.g. Rosenbrock23() becomes
    Rosenbrock23(autodiff = AutoFiniteDiff())). More details can befound at
    https://docs.sciml.ai/DiffEqDocs/stable/features/performance_overloads/
 2. Improving the compatibility of `f` with ForwardDiff.jl automatic
@@ -251,7 +251,7 @@ with automatic differentiation. Methods to fix this include:
 3. Defining analytical Jacobians. More details can be
    found at https://docs.sciml.ai/DiffEqDocs/stable/types/ode_types/#SciMLBase.ODEFunction
 
-Note: turning off automatic differentiation tends to have a very minimal
+Note: turning off AD tends to have a very minimal
 performance impact (for this use case, because it's forward mode for a
 square Jacobian. This is different from optimization gradient scenarios).
 However, one should be careful as some methods are more sensitive to
@@ -326,7 +326,7 @@ prob = DE.ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5),
 sol = DE.solve(prob, DE.Rodas5P())
 ```
 
-## Automatic Differentiation use case 2: Differentiating Solvers
+## AD use case 2: Differentiating Solvers
 
 That covers how it's used in the solvers. But the other use case is on the solver. The use case is if you need the derivative:
 
@@ -378,7 +378,7 @@ ForwardDiff.jacobian(solve_with_p, [0.04, 3e7, 1e4])
 
 ## Complications
 
-ForwardDiff is forward-mode automatic differentiation. This is only efficient when the number of inputs is much equal to, or larger than, the number of outputs. Or if the equation is "sufficiently small". A good rule of thumb is:
+ForwardDiff is forward-mode AD. This is only efficient when the number of inputs is much equal to, or larger than, the number of outputs. Or if the equation is "sufficiently small". A good rule of thumb is:
 
 ```
 number of parameters + number of equations < 100 => forward-mode
