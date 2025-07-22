@@ -65,6 +65,7 @@ talk
 ## Defining and solving an ODE
 
 ```{julia}
+#| echo: true
 import DifferentialEquations as DE
 
 function lorenz!(du, u, p, t)
@@ -84,6 +85,7 @@ prob = DE.ODEProblem(lorenz!, u0, tspan, p)
 ## Defining and solving an ODE
 
 ```{julia}
+#| echo: true
 sol = DE.solve(prob)
 ```
 
@@ -97,6 +99,7 @@ Plots.plot(sol, idxs = (1, 2, 3))
 ## Tweaking the tolerances
 
 ```{julia}
+#| echo: true
 sol = DE.solve(prob; abstol=1e-8, reltol=1e-8)
 ```
 
@@ -106,22 +109,26 @@ sol = DE.solve(prob; abstol=1e-8, reltol=1e-8)
 ## Interpolating the solution
 
 ```{julia}
+#| echo: true
 sol(2.0)
 ```
 
 ```{julia}
+#| echo: true
 sol([1.0,2.0])
 ```
 
 You can even get derivatives!
 
 ```{julia}
+#| echo: true
 sol([1.0,2.0], Val{2}) # 2nd derivative
 ```
 
 ## Controlling Saving
 
 ```{julia}
+#| echo: true
 sol = DE.solve(prob; saveat = 1.0)
 ```
 
@@ -136,6 +143,7 @@ sol = DE.solve(prob, DE.Tsit5())
 ```
 
 ```{julia}
+#| echo: true
 sol = DE.solve(prob, DE.Vern9())
 ```
 
@@ -216,6 +224,7 @@ different sets of solvers
 ## Stiff Equation Example: ROBER
 
 ```{julia}
+#| echo: true
 function rober!(du, u, p, t)
     y₁, y₂, y₃ = u
     k₁, k₂, k₃ = p
@@ -233,6 +242,7 @@ Plots.plot(sol, tspan = (1e-6, 1e5))
 ## Stiff Equation Example: ROBER
 
 ```{julia}
+#| echo: true
 Plots.plot(sol, tspan = (1e-6, 1e5), xscale = :log10, yscale=:log10)
 ```
 
@@ -248,6 +258,7 @@ DifferentialEquations.jl loads a full set of solvers, but if you know exactly th
 solver that you want, you can simply load the subpackage with that solver!
 
 ```{julia}
+#| echo: true
 import OrdinaryDiffEqTsit5 as ODE5
 
 function lorenz!(du, u, p, t)
@@ -281,6 +292,7 @@ $$
 ## Example Defining A SplitODEProblem
 
 ```{julia}
+#| echo: true
 u = rand(4, 2)
 f1 = (du, u, p, t) -> du .= 2u
 f2 = (du, u, p, t) -> du .= 2u
@@ -301,6 +313,7 @@ speical integrators known as Exponential Runge-Kutta Methods. These can be fast
 for PDE discretizations that tend of have this form.
 
 ```{julia}
+#| echo: true
 using OrdinaryDiffEqExponentialRK, SciMLOperators
 A = [2.0 -1.0; -1.0 2.0]
 linnonlin_f1 = MatrixOperator(A)
@@ -325,6 +338,7 @@ By using matrix exponentials, these methods can have good conservation propertie
 ## Example Magnus Method Solve
 
 ```{julia}
+#| echo: true
 using OrdinaryDiffEqLinear, SciMLOperators
 function update_func(A, u, p, t)
     A[1, 1] = 0
@@ -343,6 +357,7 @@ sol = solve(prob, MagnusGL6(), dt = 1 / 4)
 ## DyanmicalODEProblem and Symplectic Integrators
 
 ```{julia}
+#| echo: true
 using OrdinaryDiffEqSymplecticRK, LinearAlgebra, ForwardDiff, Plots; gr()
 H(q,p) = norm(p)^2/2 - inv(norm(q))
 L(q,p) = q[1]*p[2] - p[1]*q[2]
@@ -362,6 +377,7 @@ sol = solve(prob, KahanLi6(), dt=1//10);
 ## Symplectic Integrator Long Time Solution
 
 ```{julia}
+#| echo: true
 plot_orbit(sol) = plot(sol,idxs=(3,4), lab="Orbit", title="Kepler Problem Solution")
 
 function plot_first_integrals(sol, H, L)
@@ -375,6 +391,7 @@ analysis_plot(sol, H, L)
 ## Normal Integrator Long Time Solution
 
 ```{julia}
+#| echo: true
 sol = solve(prob, DE.Tsit5());
 analysis_plot(sol, H, L)
 ```
@@ -431,6 +448,7 @@ If you do the matrix-vector multiplication out, you see that last row of zeros s
 ## DAE via Mass Matrix Example
 
 ```{julia}
+#| echo: true
 function rober(du, u, p, t)
     y₁, y₂, y₃ = u
     k₁, k₂, k₃ = p

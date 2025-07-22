@@ -15,6 +15,7 @@ code into the code for computing the solution and its derivative simultaneously.
 ## Demonstration of symbolic forms of code
 
 ```{julia}
+#| echo: true
 using Symbolics
 @variables x
 function f(x)
@@ -30,12 +31,14 @@ sin(f(x))
 ## Demonstration of symbolic forms of code
 
 ```{julia}
+#| echo: true
 Symbolics.derivative(sin(f(x)),x) 
 ```
 
 ## Automatic Differentiation done by hand
 
 ```{julia}
+#| echo: true
 function f(x)
     out = x
     for i in 1:5
@@ -59,10 +62,12 @@ f((1,1))
 ## Validation
 
 ```{julia}
+#| echo: true
 f((1,1))
 ```
 
 ```{julia}
+#| echo: true
 (substitute(sin(f(x)),x=>1), substitute(Symbolics.derivative(sin(f(x)),x),x=>1))
 ```
 
@@ -107,6 +112,7 @@ is used in the solver!
 ## Using Automatic Differentiation
 
 ```{julia}
+#| echo: true
 using ForwardDiff
 
 function rober!(du, u, p, t)
@@ -129,6 +135,7 @@ _t = 0.0
 Uhh?
 
 ```{julia}
+#| echo: true
 ForwardDiff.jacobian((x)->(rober!(du,x,p,t); du), u0)
 ```
 
@@ -138,6 +145,7 @@ You have to be careful about types! `du` is only 3 64-bit values so
 it cannot hold the 2x64-bit dual numbers used in AD!
 
 ```{julia}
+#| echo: true
 ForwardDiff.jacobian(u0) do x
     dx = copy(x)
     rober!(dx,x,p,t)
@@ -161,6 +169,7 @@ It's actually harder to turn it off.
 
 
 ```{julia}
+#| echo: true
 import ADTypes
 sol = DE.solve(prob, DE.Rodas5P(autodiff = ADTypes.AutoFiniteDiff()))
 ```
@@ -172,6 +181,7 @@ internally.
 ## If it's automatic, why care?
 
 ```{julia}
+#| echo: true
 import LinearAlgebra as LA
 
 A = rand(3,3) ./ 100
@@ -194,6 +204,7 @@ sol = DE.solve(prob, DE.Rodas5P())
 Small performance and robustness loss, but if it works it works
 
 ```{julia}
+#| echo: true
 fsol = DE.solve(prob, DE.Rodas5P(autodiff=ADTypes.AutoFiniteDiff()))
 ```
 
@@ -204,6 +215,7 @@ change when in the context of autodiff. PreallocationTools.jl is a package
 that helps make this process easier.
 
 ```{julia}
+#| echo: true
 import PreallocationTools as PT
 cache = PT.DiffCache(zeros(3))
 
@@ -237,6 +249,7 @@ i.e. you want to know how the solution changes if you change parameters. This is
 AD differentiates Julia code, DiffEq.jl is Julia code.
 
 ```{julia}
+#| echo: true
 function rober!(du, u, p, t)
     y₁, y₂, y₃ = u
     k₁, k₂, k₃ = p
@@ -260,6 +273,7 @@ solve_with_p([0.04, 3e7, 1e4])
 QED.
 
 ```{julia}
+#| echo: true
 ForwardDiff.jacobian(solve_with_p, [0.04, 3e7, 1e4])
 ```
 
@@ -281,6 +295,7 @@ its functions are not directly used. If it's not imported then you will get
 an error instructing you to import it!
 
 ```{julia}
+#| echo: true
 import Zygote, SciMLSensitivity
 Zygote.jacobian(solve_with_p, [0.04, 3e7, 1e4])
 ```

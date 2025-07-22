@@ -8,6 +8,7 @@ Let's create an exponential decay problem. This is a model
 of a drug concentration in your body after you took a pill.
 
 ```{julia}
+#| echo: true
 import DifferentialEquations as DE
 function f(du, u, p, t)
     du[1] = -p*u[1]
@@ -26,6 +27,7 @@ Now let's add to the simulation that you get an injection of this
 drug at time $t=4$.
 
 ```{julia}
+#| echo: true
 condition(u, t, integrator) = t == 4
 affect!(integrator) = integrator.u[1] += 10
 cb = DE.DiscreteCallback(condition, affect!)
@@ -34,6 +36,7 @@ cb = DE.DiscreteCallback(condition, affect!)
 Nothing happened?
 
 ```{julia}
+#| echo: true
 sol = DE.solve(prob, DE.Tsit5(), callback = cb)
 Plots.plot(sol)
 ```
@@ -41,6 +44,7 @@ Plots.plot(sol)
 ## Setup an intervention: needs tstops
 
 ```{julia}
+#| echo: true
 sol = DE.solve(prob, DE.Tsit5(), callback = cb, tstops = [4.0])
 Plots.plot(sol)
 ```
@@ -48,6 +52,7 @@ Plots.plot(sol)
 ## Multiple doses
 
 ```{julia}
+#| echo: true
 dosetimes = [4.0, 8.0]
 condition(u, t, integrator) = t ∈ dosetimes
 affect!(integrator) = integrator.u[1] += 10
@@ -61,6 +66,7 @@ Plots.plot(sol)
 PresetTimeCallback automates the setting of tstops:
 
 ```{julia}
+#| echo: true
 dosetimes = [4.0, 8.0]
 affect!(integrator) = integrator.u[1] += 10
 cb = DE.PresetTimeCallback(dosetimes, affect!)
@@ -72,6 +78,7 @@ Plots.plot(sol)
 
 Understanding how PresetTimeCallback can elucidate some information about callbacks:
 ```{julia}
+#| echo: true
 function cb_init(c, u, t, integrator)
     for tstop in dosetimes
         DE.add_tstop!(integrator, tstop)
@@ -89,6 +96,7 @@ We can also change other aspects of the system. Let's change the decay parameter
 into a positive number to model that the dose does not come all at once:
 
 ```{julia}
+#| echo: true
 dosetimes = [4.0, 5.0, 8.0, 9.0]
 function cb_init(c, u, t, integrator)
     for tstop in dosetimes
@@ -116,6 +124,7 @@ functions you can do on the integrator.
 ## Using DiscreteCallbacks for Logging
 
 ```{julia}
+#| echo: true
 condition(u, t, integrator) = true
 affect!(integrator) = @show integrator.t
 cb = DE.DiscreteCallback(condition, affect!)
@@ -131,6 +140,7 @@ ball. The model is simple: $x'' = -g$, i.e. the ball is accelerating downwards.
 We turn the second order ODE into two first order ODEs: $x' = v$, $v' = -g$.
 
 ```{julia}
+#| echo: true
 function f(du, u, p, t)
     du[1] = u[2]
     du[2] = -p
@@ -149,6 +159,7 @@ Plots.plot(sol)
 To stop the ball from going into the floor, we will tell it that when `u[1] = 0`, we should flip the velocity. ContinuousCallbacks work by having the `condition` be a rootfinding function, i.e. gives an event when `condition(u(t), t) = 0`
 
 ```{julia}
+#| echo: true
 function condition(u, t, integrator) # Event when condition(u,t,integrator) == 0
     u[1]
 end
@@ -163,6 +174,7 @@ Plots.plot(sol)
 ## Implicitly Defined Event Times: ContinuousCallback
 
 ```{julia}
+#| echo: true
 tspan = (0.0, 15.0)
 prob = DE.ODEProblem(f, u0, tspan, p)
 sol = DE.solve(prob, DE.Tsit5(), callback = cb)
@@ -174,6 +186,7 @@ Plots.plot(sol)
 Instead of just flipping the velocity, let's add some friction:
 
 ```{julia}
+#| echo: true
 function condition(u, t, integrator) # Event when condition(u,t,integrator) == 0
     u[1]
 end
@@ -194,6 +207,7 @@ velocity, but after sticking this value is `0.0`. Then when it's stuck, we will 
 the values be exactly 0.0. This looks like:
 
 ```{julia}
+#| echo: true
 function dynamics!(du, u, p, t)
     du[1] = u[2]
     du[2] = p[1] * -9.8
@@ -224,6 +238,7 @@ We can also dynamically choose where to terminate integrations using `DE.termina
 Let's now terminate the integration when it's stuck to the floor:
 
 ```{julia}
+#| echo: true
 function floor_aff!(integ)
     integ.u[2] *= -0.5
     if integ.dt > 1e-12
@@ -246,6 +261,7 @@ Plots.plot(sol, idxs=1)
 ```
 
 ```{julia}
+#| echo: true
 stuck_time = sol.t[end]
 ```
 
@@ -262,6 +278,7 @@ Let's start by setting up the model. Now we have $x'' = -g$ and $y'' = 0$ leadin
 to the system of equations:
 
 ```{julia}
+#| echo: true
 function f(du, u, p, t)
     du[1] = u[2]
     du[2] = -p
@@ -278,6 +295,7 @@ Now let's use the function `(u[3] - 10.0)u[3]` to denote hitting vertical walls,
 since it's zero if either `u[3] == 0.0` or `u[3] == 10.0`.
 
 ```{julia}
+#| echo: true
 function condition(out, u, t, integrator)
     out[1] = u[1]
     out[2] = (u[3] - 10.0)u[3]
@@ -297,6 +315,7 @@ cb = DE.VectorContinuousCallback(condition, affect!, 2)
 ## Multiple Walls: VectorContinuousCallback
 
 ```{julia}
+#| echo: true
 u0 = [50.0, 0.0, 0.0, 2.0]
 tspan = (0.0, 15.0)
 p = 9.8

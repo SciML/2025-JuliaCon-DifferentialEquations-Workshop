@@ -1,5 +1,122 @@
 # Writing fast Julia code
 
+---
+
+## Make sure your code is type stable.
+
+*`@code_warntype f(du, u, p, t)`
+
+---
+
+## Avoid unnecessary array allocations
+
+* Use `@views` when appropriate
+* Preallocate when possible
+* Default to place form of ODEs 
+
+---
+
+## `@views`
+
+
+```{julia}
+#| echo: true
+#| output: false
+v = rand(10000)
+
+@time v[2:end]
+@time @views v[2:end]
+```
+
+---
+
+## Preallocate when possible
+```{julia}
+#| echo: true
+#| output: false
+
+using LinearAlgebra
+
+A, b, v = rand(10000,10000), rand(10000), rand(10000)
+@time b*v'
+@time mul!(A, b, v')
+```
+
+```{julia}
+@time b*v'
+@time mul!(A, b, v')
+```
+
+---
+
+## Rober out of place
+```{julia}
+#| echo: true
+function rober_oop(u, p, t)
+    y₁, y₂, y₃ = u
+    k₁, k₂, k₃ = p
+    return [-k₁ * y₁ + k₃ * y₂ * y₃
+             k₁ * y₁ - k₂ * y₂^2 - k₃ * y₂ * y₃
+             k₂ * y₂^2]
+end
+
+function rober!(du, u, p, t)
+    y₁, y₂, y₃ = u
+    k₁, k₂, k₃ = p
+    du[1] = -k₁ * y₁ + k₃ * y₂ * y₃
+    du[2] = k₁ * y₁ - k₂ * y₂^2 - k₃ * y₂ * y₃
+    du[3] = k₂ * y₂^2
+    nothing
+end
+```
+
+---
+
+## Avoid Splatting into arrays
+
+
+```{julia}
+#| echo: true
+```
+
+
+---
+
+## Cost of Operations
+
+| Operation | Cost Estimate (ns) |
+| - | - |
+| +, -, * | 0.5 ns |
+| polynomial (degree 6) | 2 ns |
+| exp, log, trig | 4 ns |
+| div. sqrt | 5ns (varries) |
+| ^ (int exponent) | 5 ns |
+| ^ (float exponent) | 15 ns |
+| Speccial functions | 20-100 ns |
+| DRAM | 100 ns |
+
+---
+
+## Use `@fastmath` where appropriate
+
+* Reassociation, 
+* Substitutes functions for less accurate forms
+* Finite numbers
+
+---
+
+
+```{julia}
+#| echo: true
+function rober!(du, u, p, t)
+    y₁, y₂, y₃ = u
+    k₁, k₂, k₃ = p
+    return [-k₁ * y₁ + k₃ * y₂ * y₃
+             k₁ * y₁ - k₂ * y₂^2.0 - k₃ * y₂ * y₃
+             k₂ * y₂^2.0]
+end
+```
+
 <!-- Local Variables: -->
 <!-- mode: markdown -->
 <!-- End: -->
