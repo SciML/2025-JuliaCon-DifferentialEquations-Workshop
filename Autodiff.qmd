@@ -134,9 +134,28 @@ _t = 0.0
 
 Uhh?
 
-```{julia}
-#| echo: true
+```
 ForwardDiff.jacobian((x)->(rober!(du,x,p,t); du), u0)
+```
+
+```
+ERROR: UndefVarError: `t` not defined
+Stacktrace:
+ [1] (::var"#11#12")(x::Vector{ForwardDiff.Dual{ForwardDiff.Tag{var"#11#12", Float64}, Float64, 3}})
+   @ Main ~/.julia/external/2025-JuliaCon-DifferentialEquations-Workshop/Autodiff.qmd:1
+ [2] vector_mode_dual_eval!
+   @ ~/.julia/packages/ForwardDiff/UBbGT/src/apiutils.jl:24 [inlined]
+ [3] vector_mode_jacobian(f::var"#11#12", x::Vector{…}, cfg::ForwardDiff.JacobianConfig{…})
+   @ ForwardDiff ~/.julia/packages/ForwardDiff/UBbGT/src/jacobian.jl:129
+ [4] jacobian
+   @ ~/.julia/packages/ForwardDiff/UBbGT/src/jacobian.jl:22 [inlined]
+ [5] jacobian(f::var"#11#12", x::Vector{Float64}, cfg::ForwardDiff.JacobianConfig{ForwardDiff.Tag{…}, Float64, 3, Vector{…}})
+   @ ForwardDiff ~/.julia/packages/ForwardDiff/UBbGT/src/jacobian.jl:19
+ [6] jacobian(f::var"#11#12", x::Vector{Float64})
+   @ ForwardDiff ~/.julia/packages/ForwardDiff/UBbGT/src/jacobian.jl:19
+ [7] top-level scope
+   @ ~/.julia/external/2025-JuliaCon-DifferentialEquations-Workshop/Autodiff.qmd:1
+Some type information was truncated. Use `show(err)` to see complete types.
 ```
 
 ## Using Automatic Differentiation
@@ -205,9 +224,60 @@ sol = DE.solve(prob, DE.Rodas5P())
 
 Small performance and robustness loss, but if it works it works
 
-```{julia}
+```
 #| echo: true
 fsol = DE.solve(prob, DE.Rodas5P(autodiff=ADTypes.AutoFiniteDiff()))
+```
+
+```
+ERROR: First call to automatic differentiation for the Jacobian
+failed. This means that the user `f` function is not compatible
+with automatic differentiation. Methods to fix this include:
+
+1. Turn off automatic differentiation (e.g. Rosenbrock23() becomes
+   Rosenbrock23(autodiff = AutoFiniteDiff())). More details can befound at
+   https://docs.sciml.ai/DiffEqDocs/stable/features/performance_overloads/
+2. Improving the compatibility of `f` with ForwardDiff.jl automatic
+   differentiation (using tools like PreallocationTools.jl). More details
+   can be found at https://docs.sciml.ai/DiffEqDocs/stable/basics/faq/#Autodifferentiation-and-Dual-Numbers
+3. Defining analytical Jacobians. More details can be
+   found at https://docs.sciml.ai/DiffEqDocs/stable/types/ode_types/#SciMLBase.ODEFunction
+
+Note: turning off automatic differentiation tends to have a very minimal
+performance impact (for this use case, because it's forward mode for a
+square Jacobian. This is different from optimization gradient scenarios).
+However, one should be careful as some methods are more sensitive to
+accurate gradients than others. Specifically, Rodas methods like `Rodas4`
+and `Rodas5P` require accurate Jacobians in order to have good convergence,
+while many other methods like BDF (`QNDF`, `FBDF`), SDIRK (`KenCarp4`),
+and Rosenbrock-W (`Rosenbrock23`) do not. Thus if using an algorithm which
+is sensitive to autodiff and solving at a low tolerance, please change the
+algorithm as well.
+
+MethodError: no method matching Float64(::ForwardDiff.Dual{ForwardDiff.Tag{DiffEqBase.OrdinaryDiffEqTag, Float64}, Float64, 1})
+
+Closest candidates are:
+  (::Type{T})(::Real, ::RoundingMode) where T<:AbstractFloat
+   @ Base rounding.jl:207
+  (::Type{T})(::T) where T<:Number
+   @ Core boot.jl:792
+  Float64(::Int8)
+   @ Base float.jl:159
+  ...
+
+Stacktrace:
+  [1] jacobian!(J::Matrix{…}, f::Function, x::Vector{…}, fx::Vector{…}, integrator::OrdinaryDiffEqCore.ODEIntegrator{…}, jac_config::Tuple{…})
+    @ OrdinaryDiffEqDifferentiation ~/.julia/packages/OrdinaryDiffEqDifferentiation/I5Bk2/src/derivative_wrappers.jl:223
+  [2] calc_J!
+    @ ~/.julia/packages/OrdinaryDiffEqDifferentiation/I5Bk2/src/derivative_utils.jl:222 [inlined]
+  [3] calc_W!
+    @ ~/.julia/packages/OrdinaryDiffEqDifferentiation/I5Bk2/src/derivative_utils.jl:627 [inlined]
+  [4] calc_W!
+    @ ~/.julia/packages/OrdinaryDiffEqDifferentiation/I5Bk2/src/derivative_utils.jl:565 [inlined]
+  [5] calc_rosenbrock_differentiation!
+    @ ~/.julia/packages/OrdinaryDiffEqDifferentiation/I5Bk2/src/derivative_utils.jl:702 [inlined]
+  [6] perform_step!(integrator::OrdinaryDiffEqCore.ODEIntegrator{…}, cache::OrdinaryDiffEqRosenbrock.RosenbrockCache{…}, repeat_step::Bool)
+    @ OrdinaryDiffEqRosenbrock ~/.julia/packages/OrdinaryDiffEqRosenbrock/1cjFj/src/rosenbrock_perform_ste
 ```
 
 ## More involved answer: PreallocationTools.jl

@@ -122,7 +122,7 @@ You can even get derivatives!
 
 ```{julia}
 #| echo: true
-sol([1.0,2.0], Val{2}) # 2nd derivative
+sol([1.0,2.0], Val{1}) # 1st derivative
 ```
 
 ## Controlling Saving
@@ -297,8 +297,8 @@ $$
 u = rand(4, 2)
 f1 = (du, u, p, t) -> du .= 2u
 f2 = (du, u, p, t) -> du .= 2u
-prob = SplitODEProblem(f1, f2, u, (0.0, 1.0))
-sol = solve(prob, KenCarp4());
+prob = DE.SplitODEProblem(f1, f2, u, (0.0, 1.0))
+sol = DE.solve(prob, DE.KenCarp4());
 ```
 
 NOTE: SplitODEProblems can be solved by standard ODE solvers (by definition, just
