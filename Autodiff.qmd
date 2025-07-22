@@ -217,16 +217,10 @@ function rober!(du, u, p, t)
 end
 cache = zeros(3)
 prob = DE.ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), (0.04, 3e7, 1e4, A, cache))
+```
+
+```
 sol = DE.solve(prob, DE.Rodas5P())
-```
-
-## Easy answer to autodiff issues: just move to finite diff
-
-Small performance and robustness loss, but if it works it works
-
-```
-#| echo: true
-fsol = DE.solve(prob, DE.Rodas5P(autodiff=ADTypes.AutoFiniteDiff()))
 ```
 
 ```
@@ -279,6 +273,16 @@ Stacktrace:
   [6] perform_step!(integrator::OrdinaryDiffEqCore.ODEIntegrator{…}, cache::OrdinaryDiffEqRosenbrock.RosenbrockCache{…}, repeat_step::Bool)
     @ OrdinaryDiffEqRosenbrock ~/.julia/packages/OrdinaryDiffEqRosenbrock/1cjFj/src/rosenbrock_perform_ste
 ```
+
+## Easy answer to autodiff issues: just move to finite diff
+
+Small performance and robustness loss, but if it works it works
+
+```{julia}
+#| echo: true
+fsol = DE.solve(prob, DE.Rodas5P(autodiff=ADTypes.AutoFiniteDiff()))
+```
+
 
 ## More involved answer: PreallocationTools.jl
 
@@ -366,7 +370,7 @@ Note you need to `import SciMLSensitivity` for the adjoint system, even if
 its functions are not directly used. If it's not imported then you will get
 an error instructing you to import it!
 
-```{julia}
+```
 #| echo: true
 import Zygote, SciMLSensitivity
 Zygote.jacobian(solve_with_p, [0.04, 3e7, 1e4])
