@@ -82,6 +82,10 @@ monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
 * Slightly trickier to set up
 * Fewer supported solvers
 
+---
+
+## EnsembleGPUKernel Continued
+
 ```{julia}
 #| echo: true
 #| output: false

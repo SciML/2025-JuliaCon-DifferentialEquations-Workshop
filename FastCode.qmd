@@ -31,7 +31,7 @@ v = rand(10000)
 
 ```{julia}
 @time v[2:end]
-@time @views v[2:end]
+@time @views v[2:end];
 ```
 
 ---
@@ -67,7 +67,6 @@ function rober_oop(u, p, t)
              k₁ * y₁ - k₂ * y₂^2 - k₃ * y₂ * y₃
              k₂ * y₂^2]
 end
-
 function rober!(du, u, p, t)
     y₁, y₂, y₃ = u
     k₁, k₂, k₃ = p
@@ -76,11 +75,15 @@ function rober!(du, u, p, t)
     du[3] = k₂ * y₂^2
     nothing
 end
+```
 
+```{julia}
+#| echo: true
+#| output: false
 prob_oop = ODEProblem(rober_oop, [1.0, 0.0, 0.0], (0.0, 1e5), [0.04, 3e7, 1e4])
 prob! = ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), [0.04, 3e7, 1e4])
 @time solve(prob_oop)
-@time solve(prob!)
+@time solve(prob!);
 ```
 
 ```{julia}
@@ -103,7 +106,7 @@ u1, u2 = rand(1000), rand(1000)
 
 ```{julia}
 @time [u1..., u2...]
-@time vcat(u1, u2)
+@time vcat(u1, u2);
 ```
 
 ---
@@ -131,7 +134,7 @@ u1, u2 = rand(1000), rand(1000)
 
 ---
 
-
+## Interaction time
 ```{julia}
 #| echo: true
 function rober!(du, u, p, t)
