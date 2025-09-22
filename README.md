@@ -2,6 +2,8 @@
 
 [See the built version of the workshop notes!](https://sciml.github.io/2025-JuliaCon-DifferentialEquations-Workshop/)
 
+[See the video recording of the workshop at JuliaCon 2025!](https://www.youtube.com/watch?v=lSGFAmXKIsE)
+
 ## Rendering
 
 Install dependencies with
