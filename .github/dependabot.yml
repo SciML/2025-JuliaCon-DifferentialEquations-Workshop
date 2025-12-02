@@ -1,15 +1,15 @@
 version: 2
+enable-beta-ecosystems: true # Julia ecosystem
 updates:
   - package-ecosystem: "github-actions"
-    groups:
-      # Group all GitHub Actions PRs into a single PR:
-      all-github-actions:
-        patterns:
-          - "*"
     directory: "/"
     schedule:
-      interval: "monthly"
-    open-pull-requests-limit: 100
-    labels:
-      - "dependencies"
-      - "github-actions"
+      interval: "weekly"
+  - package-ecosystem: "julia"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      all-julia-packages:
+        patterns:
+          - "*"
