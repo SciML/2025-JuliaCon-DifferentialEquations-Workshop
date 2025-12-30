@@ -1,4 +1,5 @@
 version: 2
+enable-beta-ecosystems: true # Julia ecosystem
 updates:
   - package-ecosystem: "github-actions"
     groups:
@@ -13,3 +14,11 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
+  - package-ecosystem: "julia"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    groups:
+      all-julia-packages:
+        patterns:
+          - "*"
