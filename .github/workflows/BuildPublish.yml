@@ -38,7 +38,7 @@ jobs:
 
     - name: Load Julia packages from cache
       id: julia-cache
-      uses: julia-actions/cache@v2
+      uses: julia-actions/cache@v3
 
     - name: Install dependencies
       shell: julia --color=yes --project {0}
