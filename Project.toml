@@ -28,7 +28,7 @@ quarto_jll = "b7163347-bfae-5fd9-aba4-19f139889d78"
 [compat]
 ADTypes = "1.21.0"
 BenchmarkTools = "1.6"
-CUDA = "5.9.5"
+CUDA = "5.9.5, 6.0"
 DiffEqGPU = "3.9.0"
 DifferentialEquations = "7.17.0"
 DifferentiationInterface = "0.7.13"
