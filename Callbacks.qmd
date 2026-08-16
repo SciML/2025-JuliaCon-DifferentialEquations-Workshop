@@ -337,7 +337,7 @@ stuck_time = sol.t[end]
 
 ## Multiple Walls: VectorContinuousCallback
 
-Sometimes you may want to track multiple simultanious continuous conditions.
+Sometimes you may want to track multiple simultaneous continuous conditions.
 For example, let's model the ball in a room, where there are two vertical walls
 along with the floor. We will want to bounce the ball if it hits any of the
 walls or the floor. We do this via `VectorContinuousCallback`. It's almost the
