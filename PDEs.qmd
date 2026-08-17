@@ -230,7 +230,7 @@ a convenience.
 There is a special case for a split ODE problem where $f(u,p,t)$ is linear, i.e.
 $f(u,p,t)=Au$. When this occurs, ODE solvers can specialize on being able to solve
 that part exactly via the matrix exponential $exp(At)v$, and thus we can use
-speical integrators known as Exponential Runge-Kutta Methods. These can be fast
+special integrators known as Exponential Runge-Kutta Methods. These can be fast
 for PDE discretizations that tend of have this form.
 
 ```{julia}
@@ -299,7 +299,7 @@ a convenience.
 There is a special case for a split ODE problem where $f(u,p,t)$ is linear, i.e.
 $f(u,p,t)=Au$. When this occurs, ODE solvers can specialize on being able to solve
 that part exactly via the matrix exponential $exp(At)v$, and thus we can use
-speical integrators known as Exponential Runge-Kutta Methods. These can be fast
+special integrators known as Exponential Runge-Kutta Methods. These can be fast
 for PDE discretizations that tend of have this form.
 
 ```{julia}

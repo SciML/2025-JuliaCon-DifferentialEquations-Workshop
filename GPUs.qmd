@@ -9,11 +9,11 @@
 
 ---
 
-## Within GPU paralellization
+## Within GPU parallelization
 
 * Many states (>1000)
 * Expensive `f`
-* fairly simple `f` (array based paralellism)
+* fairly simple `f` (array based parallelism)
 
 
 ---
@@ -131,7 +131,7 @@ monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
 
 ## GPU Performance profile
 
-* Lots of paralelism necessary
+* Lots of parallelism necessary
 * `Float64` is the enemy. Use `Float32` wherever possible
 * Minimize data transfer
 * Be careful with scalar indexing
