@@ -80,7 +80,8 @@ PresetTimeCallback automates the setting of tstops:
 #| echo: true
 dosetimes = [4.0, 8.0]
 affect!(integrator) = integrator.u[1] += 10
-cb = DE.PresetTimeCallback(dosetimes, affect!)
+import DiffEqCallbacks
+cb = DiffEqCallbacks.PresetTimeCallback(dosetimes, affect!)
 sol = DE.solve(prob, DE.Tsit5(), callback = cb)
 Plots.plot(sol)
 ```

@@ -399,6 +399,7 @@ If you do the matrix-vector multiplication out, you see that last row of zeros s
 
 ```{julia}
 #| echo: true
+using OrdinaryDiffEqRosenbrock
 function rober(du, u, p, t)
     y₁, y₂, y₃ = u
     k₁, k₂, k₃ = p
@@ -412,7 +413,7 @@ M = [1.0 0 0
      0 0 0]
 mmf = DE.ODEFunction(rober, mass_matrix = M)
 prob_mm = DE.ODEProblem(mmf, [1.0, 0.0, 0.0], (0.0, 1e5), (0.04, 3e7, 1e4))
-sol = DE.solve(prob_mm, DE.Rodas5(), reltol = 1e-8, abstol = 1e-8)
+sol = DE.solve(prob_mm, Rodas5(), reltol = 1e-8, abstol = 1e-8)
 
 Plots.plot(sol, xscale = :log10, tspan = (1e-6, 1e5), layout = (3, 1))
 ```
