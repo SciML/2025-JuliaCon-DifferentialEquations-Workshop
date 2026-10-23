@@ -162,22 +162,15 @@ using LinearSolve
 ```{julia}
 #| echo: true
 #| output: false
-using IncompleteLU
-function incompletelu(W, du, u, p, t, newW, Plprev, Prprev, solverdata)
-    if newW === nothing || newW
-        Pl = ilu(convert(AbstractMatrix, W), τ = 50.0)
-    else
-        Pl = Plprev
-    end
-    Pl, nothing
-end
+using IncompleteLU, OrdinaryDiffEqSDIRK
+incompletelu(W, p = nothing) = (ilu(convert(AbstractMatrix, W), τ = 50.0), I)
 @time solve(brusselator_sparse,
-    KenCarp47(linsolve = KrylovJL(), precs = incompletelu,
+    KenCarp47(linsolve = KrylovJL_GMRES(precs = incompletelu),
         concrete_jac = true));
 ```
 ```{julia}
 @time solve(brusselator_sparse,
-    KenCarp47(linsolve = KrylovJL(), precs = incompletelu,
+    KenCarp47(linsolve = KrylovJL_GMRES(precs = incompletelu),
         concrete_jac = true));
 ```
 
@@ -216,7 +209,7 @@ u = rand(4, 2)
 f1(du, u, p, t) = du .= 2u
 f2(du, u, p, t) = du .= 2u
 prob = SplitODEProblem(f1, f2, u, (0.0, 1.0))
-sol = solve(prob, DE.KenCarp4());
+sol = solve(prob, KenCarp4());
 ```
 
 NOTE: SplitODEProblems can be solved by standard ODE solvers (by definition, just
@@ -265,6 +258,14 @@ function update_func(A, u, p, t)
     A[1, 1] = 0
     A[2, 1] = sin(t)
     A[1, 2] = -1
+    A[2, 2] = 0
+end
+A0 = ones(2, 2)
+A = MatrixOperator(A0, update_func! = update_func)
+u0 = ones(2)
+tspan = (0.0, 30.0)
+prob = ODEProblem(A, u0, tspan)
+sol = solve(prob, MagnusGL6(), dt = 1 / 4)
 ```
 
 ## SplitODEProblem and IMEX methods
@@ -287,7 +288,7 @@ u = rand(4, 2)
 f1(du, u, p, t) = du .= 2u
 f2(du, u, p, t) = du .= 2u
 prob = SplitODEProblem(f1, f2, u, (0.0, 1.0))
-sol = solve(prob, DE.KenCarp4());
+sol = solve(prob, KenCarp4());
 ```
 
 NOTE: SplitODEProblems can be solved by standard ODE solvers (by definition, just
