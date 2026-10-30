@@ -174,7 +174,7 @@ end
 ```
 ```{julia}
 @time solve(brusselator_sparse,
-    KenCarp47(linsolve = KrylovJL(), precs = incompletelu,
+    KenCarp47(linsolve = KrylovJL(precs = incompletelu),
         concrete_jac = true));
 ```
 
@@ -262,6 +262,11 @@ function update_func(A, u, p, t)
     A[1, 1] = 0
     A[2, 1] = sin(t)
     A[1, 2] = -1
+    A[2, 2] = 0
+end
+magnus_A = MatrixOperator(ones(2, 2); update_func! = update_func)
+magnus_prob = ODEProblem(magnus_A, ones(2), (0.0, 5.0))
+magnus_sol = solve(magnus_prob, MagnusMidpoint(), dt = 1 / 4)
 ```
 
 ## SplitODEProblem and IMEX methods
