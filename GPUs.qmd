@@ -20,8 +20,11 @@
 
 ## Within GPU example
 
+These examples require CUDA-capable hardware to execute.
+
 ```{julia}
 #| echo: true
+#| eval: false
 
 using DiffEqGPU, OrdinaryDiffEq, CUDA
 function linear_ode(du, u, p, t)
@@ -51,6 +54,7 @@ solve(prob, Tsit5())
 ```{julia}
 #| echo: true
 #| output: false
+#| eval: false
 
 using DiffEqGPU, OrdinaryDiffEq, CUDA
 function lorenz(du, u, p, t)
@@ -63,13 +67,14 @@ u0 = Float32[1.0; 0.0; 0.0]
 tspan = (0.0f0, 100.0f0)
 p = [10.0f0, 28.0f0, 8 / 3.0f0]
 prob = ODEProblem(lorenz, u0, tspan, p)
-prob_func = (prob, i, repeat) -> remake(prob, p = rand(Float32, 3) .* p)
+prob_func = (prob, ctx) -> remake(prob, p = rand(ctx.rng, Float32, 3) .* p)
 monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
 @time solve(monteprob, Tsit5(), EnsembleGPUArray(CUDA.CUDABackend()),
             trajectories = 10_000, saveat = 1.0f0);
 ```
 
 ```{julia}
+#| eval: false
 @time solve(monteprob, Tsit5(), EnsembleGPUArray(CUDA.CUDABackend()), trajectories = 10_000, saveat = 1.0f0);
 ```
 
@@ -89,6 +94,7 @@ monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
 ```{julia}
 #| echo: true
 #| output: false
+#| eval: false
 using StaticArrays
 
 function lorenz2(u, p, t)
@@ -102,12 +108,13 @@ u0 = @SVector [1.0f0; 0.0f0; 0.0f0]
 tspan = (0.0f0, 10.0f0)
 p = @SVector [10.0f0, 28.0f0, 8 / 3.0f0]
 prob = ODEProblem{false}(lorenz2, u0, tspan, p)
-prob_func = (prob, i, repeat) -> remake(prob, p = (@SVector rand(Float32, 3)) .* p)
+prob_func = (prob, ctx) -> remake(prob, p = (@SVector rand(ctx.rng, Float32, 3)) .* p)
 monteprob = EnsembleProblem(prob, prob_func = prob_func, safetycopy = false)
 @time solve(monteprob, GPUTsit5(), EnsembleGPUKernel(CUDA.CUDABackend()),
     trajectories = 10_000, saveat = 1.0f0)
 ```
 ```{julia}
+#| eval: false
 @time solve(monteprob, GPUTsit5(), EnsembleGPUKernel(CUDA.CUDABackend()),
     trajectories = 10_000, saveat = 1.0f0);
 ```

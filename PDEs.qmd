@@ -162,7 +162,7 @@ using LinearSolve
 ```{julia}
 #| echo: true
 #| output: false
-using IncompleteLU
+using IncompleteLU, OrdinaryDiffEqSDIRK
 function incompletelu(W, du, u, p, t, newW, Plprev, Prprev, solverdata)
     if newW === nothing || newW
         Pl = ilu(convert(AbstractMatrix, W), τ = 50.0)
@@ -172,13 +172,11 @@ function incompletelu(W, du, u, p, t, newW, Plprev, Prprev, solverdata)
     Pl, nothing
 end
 @time solve(brusselator_sparse,
-    KenCarp47(linsolve = KrylovJL(), precs = incompletelu,
-        concrete_jac = true));
+    KenCarp47(linsolve = KrylovJL(precs = incompletelu)));
 ```
 ```{julia}
 @time solve(brusselator_sparse,
-    KenCarp47(linsolve = KrylovJL(), precs = incompletelu,
-        concrete_jac = true));
+    KenCarp47(linsolve = KrylovJL(precs = incompletelu)));
 ```
 
 ---
@@ -216,7 +214,8 @@ u = rand(4, 2)
 f1(du, u, p, t) = du .= 2u
 f2(du, u, p, t) = du .= 2u
 prob = SplitODEProblem(f1, f2, u, (0.0, 1.0))
-sol = solve(prob, DE.KenCarp4());
+import OrdinaryDiffEqSDIRK as ODESDIRK
+sol = solve(prob, ODESDIRK.KenCarp4());
 ```
 
 NOTE: SplitODEProblems can be solved by standard ODE solvers (by definition, just
@@ -265,6 +264,7 @@ function update_func(A, u, p, t)
     A[1, 1] = 0
     A[2, 1] = sin(t)
     A[1, 2] = -1
+end
 ```
 
 ## SplitODEProblem and IMEX methods
@@ -287,7 +287,7 @@ u = rand(4, 2)
 f1(du, u, p, t) = du .= 2u
 f2(du, u, p, t) = du .= 2u
 prob = SplitODEProblem(f1, f2, u, (0.0, 1.0))
-sol = solve(prob, DE.KenCarp4());
+sol = solve(prob, ODESDIRK.KenCarp4());
 ```
 
 NOTE: SplitODEProblems can be solved by standard ODE solvers (by definition, just
